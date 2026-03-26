@@ -1,6 +1,13 @@
 # Template configuration for the `whatsapp` backend.
-# This is a generic HTTPS-based configuration intended to map to a future
-# provider (e.g., Twilio WhatsApp, a self-hosted gateway, etc.).
+# This uses a generic HTTPS gateway contract:
+# - send_message.py issues POST http.send_path with JSON:
+#     {"from","to","recipient","message","text","type","metadata?"}
+# - receive_messages.py issues GET http.receive_path with query params:
+#     limit, timeout, cursor, since, to
+# - receive responses may be either:
+#     {"messages": [...], "next_cursor": "..."}
+#   or a top-level JSON array of message objects
+# Message objects should include id/from/to/text/timestamp when possible.
 # Do not commit real credentials/secrets to git.
 
 service:
@@ -14,8 +21,14 @@ paths:
   data_dir: ./data/whatsapp
 
 http:
-  # Your gateway/provider base URL (HTTPS recommended).
+  # Your gateway/provider base URL (HTTPS required).
   base_url: https://example-whatsapp-gateway.local
+
+  # Endpoint used by send_message.py.
+  send_path: /messages
+
+  # Endpoint used by receive_messages.py.
+  receive_path: /messages/inbound
 
   # If your gateway uses an API key in a header:
   api_key_env: WHATSAPP_API_KEY
@@ -24,10 +37,28 @@ http:
   # Optional request timeout in seconds.
   timeout_seconds: 30
 
+  # Optional alternate authentication schemes.
+  auth:
+    bearer_token_env:
+    basic_username_env:
+    basic_password_env
+
+  # TLS settings for HTTPS gateways.
+  tls:
+    # Prefer a CA cert path for private/self-signed gateways.
+    ca_cert_path:
+    ca_cert_path_env:
+
+    # Dev/test only. Do not enable in production.
+    insecure_skip_verify: false
+
 messaging:
   # Sender identity (varies by provider).
   from_env: WHATSAPP_FROM
 
-  # Optional: restrict who can be used as recipients.
-  allowed_recipient_envs: []
+  # Optional: hard-coded allowlist.
+  allowed_recipients: []
 
+  # Optional: restrict who can be used as recipients via env vars.
+  # Each env var may contain a single recipient or a comma/newline-delimited list.
+  allowed_recipient_envs: []
