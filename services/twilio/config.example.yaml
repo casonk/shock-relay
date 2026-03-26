@@ -16,15 +16,33 @@ twilio:
   account_sid_env: TWILIO_ACCOUNT_SID
   auth_token_env: TWILIO_AUTH_TOKEN
 
+  # Optional direct fields for non-env setups.
+  account_sid:
+  auth_token:
+
   # The phone number Twilio should use as the sender.
   from_phone_env: TWILIO_FROM_PHONE
+  from_phone:
 
-  # Base URL for Twilio REST API (normally you can leave this as-is).
+  # Base URL for Twilio REST API. HTTPS required.
   api_base_url: https://api.twilio.com
+
+  # Optional request timeout in seconds.
+  timeout_seconds: 30
 
   # SMS configuration (if using Twilio SMS).
   sms:
     enabled: true
+
+    # Optional recipient allowlist.
+    allowed_recipients: []
+    allowed_recipient_envs: []
+
+  # TLS settings for HTTPS API access.
+  tls:
+    ca_cert_path:
+    ca_cert_path_env:
+    insecure_skip_verify: false
 
 env:
   # Optional overrides / additional orchestrator variables.

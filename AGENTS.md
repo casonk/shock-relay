@@ -156,13 +156,32 @@ messaging:
     - WHATSAPP_ALLOWED_RECIPIENTS
 ```
 
-### Twilio SMS (Planned)
+### Twilio SMS
 
-**API Style:** HTTP REST API
+**API Style:** HTTPS REST API
 
-**Expected Interface:**
+**Interface:**
 ```bash
-./services/twilio/send_sms.py <to_number> <message>
+./services/twilio/send_sms.py <to_number> <message> [--config <path>]
+./services/twilio/receive_messages.py [--to <number>] [--from <number>] [--page-size <count>] [--limit <count>] [--config <path>]
+./services/twilio/test_send_receive_confirm.py <recipient> [--config <path>]
+```
+
+**Configuration Required:**
+```yaml
+twilio:
+  account_sid_env: TWILIO_ACCOUNT_SID
+  auth_token_env: TWILIO_AUTH_TOKEN
+  from_phone_env: TWILIO_FROM_PHONE
+  api_base_url: https://api.twilio.com
+  timeout_seconds: 30
+  sms:
+    enabled: true
+    allowed_recipient_envs:
+      - TWILIO_ALLOWED_RECIPIENTS
+  tls:
+    ca_cert_path_env: TWILIO_CA_CERT
+    insecure_skip_verify: false
 ```
 
 ### Gmail IMAP (Planned)
