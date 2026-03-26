@@ -65,6 +65,7 @@ if not account:
 
 sys.stdout.write(account + "\t" + bus_name)
 PY
+  printf '\n'
 )
 
 if [[ -n "$BUS_NAME" ]]; then
