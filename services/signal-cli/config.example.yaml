@@ -1,0 +1,26 @@
+# Template configuration for the `signal-cli` backend.
+# Do not commit real credentials/secrets to git.
+
+service:
+  name: signal-cli
+  enabled: true
+
+runtime:
+  log_level: info
+
+# Where the backend can store local state (registration, queues, etc.).
+paths:
+  data_dir: ./data/signal-cli
+
+# signal-cli executable settings.
+signal_cli:
+  executable: signal-cli
+
+  # If your automation uses signal-cli's HTTP interface, point to it here.
+  # (The exact integration depends on how you run signal-cli in your setup.)
+  http:
+    base_url: http://127.0.0.1:8080
+
+# Optional: environment variable names the orchestrator can read instead of embedding secrets.
+env:
+  base_dir: SIGNAL_CLI_BASE_DIR

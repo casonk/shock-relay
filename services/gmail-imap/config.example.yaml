@@ -1,0 +1,29 @@
+# Template configuration for `gmail-imap`.
+# Gmail access usually requires app passwords and/or OAuth, which must NOT
+# be committed to git.
+
+service:
+  name: gmail-imap
+  enabled: false
+
+runtime:
+  log_level: info
+
+paths:
+  data_dir: ./data/gmail-imap
+
+imap:
+  host: imap.gmail.com
+  port: 993
+  use_ssl: true
+
+  # Provide via environment variables.
+  username_env: GMAIL_IMAP_USERNAME
+  password_env: GMAIL_IMAP_PASSWORD
+
+  # Mailboxes to poll.
+  mailbox: INBOX
+
+  # How often (seconds) to check for new messages.
+  poll_interval_seconds: 60
+

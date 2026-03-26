@@ -1,0 +1,33 @@
+# Template configuration for the `whatsapp` backend.
+# This is a generic HTTPS-based configuration intended to map to a future
+# provider (e.g., Twilio WhatsApp, a self-hosted gateway, etc.).
+# Do not commit real credentials/secrets to git.
+
+service:
+  name: whatsapp
+  enabled: true
+
+runtime:
+  log_level: info
+
+paths:
+  data_dir: ./data/whatsapp
+
+http:
+  # Your gateway/provider base URL (HTTPS recommended).
+  base_url: https://example-whatsapp-gateway.local
+
+  # If your gateway uses an API key in a header:
+  api_key_env: WHATSAPP_API_KEY
+  api_key_header: X-API-Key
+
+  # Optional request timeout in seconds.
+  timeout_seconds: 30
+
+messaging:
+  # Sender identity (varies by provider).
+  from_env: WHATSAPP_FROM
+
+  # Optional: restrict who can be used as recipients.
+  allowed_recipient_envs: []
+

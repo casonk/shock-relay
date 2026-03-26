@@ -1,0 +1,32 @@
+# Template configuration for the `twilio` backend.
+# Do not commit real credentials/secrets to git.
+
+service:
+  name: twilio
+  enabled: true
+
+runtime:
+  log_level: info
+
+paths:
+  data_dir: ./data/twilio
+
+twilio:
+  # Environment variables (names) the orchestrator should read.
+  account_sid_env: TWILIO_ACCOUNT_SID
+  auth_token_env: TWILIO_AUTH_TOKEN
+
+  # The phone number Twilio should use as the sender.
+  from_phone_env: TWILIO_FROM_PHONE
+
+  # Base URL for Twilio REST API (normally you can leave this as-is).
+  api_base_url: https://api.twilio.com
+
+  # SMS configuration (if using Twilio SMS).
+  sms:
+    enabled: true
+
+env:
+  # Optional overrides / additional orchestrator variables.
+  # TWILIO_REGION: us1
+  # (No defaults set in the template.)
