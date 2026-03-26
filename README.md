@@ -11,7 +11,7 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 - **Signal** (via signal-cli) - Fully implemented with send/receive capabilities
 - **Telegram** (Bot API) - Basic send/receive/test scripts in Python and native shell
 - **WhatsApp** (generic HTTPS gateway) - Basic send/receive/test scripts in Python and native shell
-- **Twilio SMS** - SMS messaging (configured)
+- **Twilio SMS** - Basic send/receive/test scripts in Python and native shell
 - **Gmail IMAP** - Email monitoring and sending (configured)
 
 ## Quick Start
@@ -87,6 +87,32 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
    ./services/telegram/receive_messages.sh --timeout 30 --pretty
    ```
 
+### Twilio SMS Example
+
+1. Copy the example configuration:
+   ```bash
+   cp services/twilio/config.example.yaml services/twilio/config.local.yaml
+   ```
+
+2. Export the credentials and sender phone referenced by the config
+   `twilio.api_base_url` must use `https://`
+
+3. Send an SMS:
+   ```bash
+   ./services/twilio/send_sms.py +15551234567 "Hello from shock-relay!"
+   ```
+
+4. Receive recent messages:
+   ```bash
+   ./services/twilio/receive_messages.py --to +15557654321 --pretty
+   ```
+
+5. Shell entrypoints are also available:
+   ```bash
+   ./services/twilio/send_sms.sh +15551234567 "Hello from shock-relay!"
+   ./services/twilio/receive_messages.sh --to +15557654321 --pretty
+   ```
+
 ## Project Structure
 
 ```
@@ -134,7 +160,7 @@ paths:
 - ✅ **Signal CLI** - Fully functional with send, receive, and test scripts
 - ⚙️ **Telegram** - Bot API send/receive/test scripts implemented in Python and native shell
 - ⚙️ **WhatsApp** - Generic HTTPS gateway send/receive/test scripts implemented in Python and native shell
-- ⚙️ **Twilio** - Configuration complete, implementation pending
+- ⚙️ **Twilio** - SMS send/receive/test scripts implemented in Python and native shell
 - ⚙️ **Gmail IMAP** - Configuration complete, implementation pending
 
 ## Use Cases
@@ -147,7 +173,7 @@ paths:
 ## Requirements
 
 - Python 3.7+
-- `curl` and `jq` for native shell WhatsApp scripts
+- `curl` and `jq` for native shell Telegram, WhatsApp, and Twilio scripts
 - signal-cli (for Signal integration)
 - Service-specific credentials/API keys
 
@@ -155,7 +181,7 @@ paths:
 
 Contributions are welcome! This project is in active development. Priority areas:
 
-1. Complete implementations for Twilio and Gmail
+1. Complete the Gmail implementation
 2. Add unified relay API layer
 3. Docker containerization
 4. Additional service integrations
