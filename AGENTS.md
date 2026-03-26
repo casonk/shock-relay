@@ -101,21 +101,30 @@ signal_cli:
   bus_name: "org.asamk.Signal"  # Optional D-Bus name
 ```
 
-### Telegram (Planned)
+### Telegram
 
-**API Style:** HTTP REST API via bot token
+**API Style:** HTTPS Bot API via bot token
 
-**Expected Interface:**
+**Interface:**
 ```bash
-./services/telegram/send_message.py <chat_id> <message>
+./services/telegram/send_message.py <chat_id> <message> [--config <path>]
+./services/telegram/receive_messages.py [--timeout <seconds>] [--limit <count>] [--offset <value>] [--config <path>]
+./services/telegram/test_send_receive_confirm.py <chat_id> [--config <path>]
 ```
 
 **Configuration Required:**
 ```yaml
 telegram:
+  api_base_url: https://api.telegram.org
   bot_token_env: TELEGRAM_BOT_TOKEN
+  timeout_seconds: 30
   allowed_chat_ids:
     - 123456789
+  allowed_updates:
+    - message
+  tls:
+    ca_cert_path_env: TELEGRAM_CA_CERT
+    insecure_skip_verify: false
 ```
 
 ### WhatsApp

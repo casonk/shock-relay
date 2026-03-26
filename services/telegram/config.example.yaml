@@ -12,12 +12,34 @@ paths:
   data_dir: ./data/telegram
 
 telegram:
+  # Telegram Bot API base URL. HTTPS required.
+  api_base_url: https://api.telegram.org
+
   # Your bot token should be provided via an environment variable.
   bot_token_env: TELEGRAM_BOT_TOKEN
+
+  # Optional direct token field for non-env setups.
+  bot_token:
+
+  # Optional request timeout in seconds.
+  timeout_seconds: 30
 
   # Where the bot is allowed to send/receive (useful for safety).
   allowed_chat_ids:
     - 123456789
+
+  # Optional: restrict getUpdates to specific update kinds.
+  allowed_updates:
+    - message
+
+  # Optional parse mode default for send_message.*.
+  default_parse_mode:
+
+  # TLS settings for HTTPS Bot API gateways.
+  tls:
+    ca_cert_path:
+    ca_cert_path_env:
+    insecure_skip_verify: false
 
   # Optional: if you run a self-hosted Telegram bot webhook.
   webhook:
