@@ -10,7 +10,7 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 
 - **Signal** (via signal-cli) - Fully implemented with send/receive capabilities
 - **Telegram** - Bot API integration (configured)
-- **WhatsApp** - HTTPS gateway support (configured)
+- **WhatsApp** (generic HTTPS gateway) - Basic send/receive/test scripts in Python and native shell
 - **Twilio SMS** - SMS messaging (configured)
 - **Gmail IMAP** - Email monitoring and sending (configured)
 
@@ -33,6 +33,32 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 4. Receive messages:
    ```bash
    ./services/signal-cli/receive_messages.py
+   ```
+
+### WhatsApp Gateway Example
+
+1. Copy the example configuration:
+   ```bash
+   cp services/whatsapp/config.example.yaml services/whatsapp/config.local.yaml
+   ```
+
+2. Export the credential/sender environment variables referenced by the config
+   `http.base_url` must use `https://`
+
+3. Send a message:
+   ```bash
+   ./services/whatsapp/send_message.py whatsapp:+15551234567 "Hello from shock-relay!"
+   ```
+
+4. Receive messages:
+   ```bash
+   ./services/whatsapp/receive_messages.py --timeout 30 --pretty
+   ```
+
+5. Shell entrypoints are also available:
+   ```bash
+   ./services/whatsapp/send_message.sh whatsapp:+15551234567 "Hello from shock-relay!"
+   ./services/whatsapp/receive_messages.sh --timeout 30 --pretty
    ```
 
 ## Project Structure
@@ -81,7 +107,7 @@ paths:
 
 - ✅ **Signal CLI** - Fully functional with send, receive, and test scripts
 - ⚙️ **Telegram** - Configuration complete, implementation pending
-- ⚙️ **WhatsApp** - Configuration complete, implementation pending
+- ⚙️ **WhatsApp** - Generic HTTPS gateway send/receive/test scripts implemented in Python and native shell
 - ⚙️ **Twilio** - Configuration complete, implementation pending
 - ⚙️ **Gmail IMAP** - Configuration complete, implementation pending
 
@@ -95,6 +121,7 @@ paths:
 ## Requirements
 
 - Python 3.7+
+- `curl` and `jq` for native shell WhatsApp scripts
 - signal-cli (for Signal integration)
 - Service-specific credentials/API keys
 
@@ -102,7 +129,7 @@ paths:
 
 Contributions are welcome! This project is in active development. Priority areas:
 
-1. Complete implementations for Telegram, WhatsApp, Twilio, and Gmail
+1. Complete implementations for Telegram, Twilio, and Gmail
 2. Add unified relay API layer
 3. Docker containerization
 4. Additional service integrations
