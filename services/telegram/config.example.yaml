@@ -1,0 +1,29 @@
+# Template configuration for the `telegram` backend.
+# Do not commit real tokens/secrets to git.
+
+service:
+  name: telegram
+  enabled: true
+
+runtime:
+  log_level: info
+
+paths:
+  data_dir: ./data/telegram
+
+telegram:
+  # Your bot token should be provided via an environment variable.
+  bot_token_env: TELEGRAM_BOT_TOKEN
+
+  # Where the bot is allowed to send/receive (useful for safety).
+  allowed_chat_ids:
+    - 123456789
+
+  # Optional: if you run a self-hosted Telegram bot webhook.
+  webhook:
+    enabled: false
+    base_url: https://example.com
+    path: /telegram/webhook
+
+# Optional environment variables the orchestrator may use.
+# WEBHOOK_SECRET_ENV: TELEGRAM_WEBHOOK_SECRET
