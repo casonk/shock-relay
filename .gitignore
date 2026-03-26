@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# shock-relay service local configs (do not commit secrets or environment-specific settings)
+services/*/config.local.yaml
+services/*/config.local.yml
+services/*/config.local.json
