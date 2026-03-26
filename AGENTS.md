@@ -118,13 +118,33 @@ telegram:
     - 123456789
 ```
 
-### WhatsApp (Planned)
+### WhatsApp
 
-**API Style:** HTTPS gateway (Twilio or self-hosted)
+**API Style:** Generic HTTPS gateway (Twilio adapter or self-hosted)
 
-**Expected Interface:**
+**Interface:**
 ```bash
-./services/whatsapp/send_message.py <recipient> <message>
+./services/whatsapp/send_message.py <recipient> <message> [--config <path>]
+./services/whatsapp/receive_messages.py [--timeout <seconds>] [--limit <count>] [--config <path>]
+./services/whatsapp/test_send_receive_confirm.py <recipient> [--config <path>]
+```
+
+**Configuration Required:**
+```yaml
+http:
+  base_url: https://example-whatsapp-gateway.local
+  send_path: /messages
+  receive_path: /messages/inbound
+  api_key_env: WHATSAPP_API_KEY
+  api_key_header: X-API-Key
+  tls:
+    ca_cert_path_env: WHATSAPP_CA_CERT
+    insecure_skip_verify: false
+
+messaging:
+  from_env: WHATSAPP_FROM
+  allowed_recipient_envs:
+    - WHATSAPP_ALLOWED_RECIPIENTS
 ```
 
 ### Twilio SMS (Planned)
