@@ -9,7 +9,7 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 ## Supported Services
 
 - **Signal** (via signal-cli) - Fully implemented with send/receive capabilities
-- **Telegram** - Bot API integration (configured)
+- **Telegram** (Bot API) - Basic send/receive/test scripts in Python and native shell
 - **WhatsApp** (generic HTTPS gateway) - Basic send/receive/test scripts in Python and native shell
 - **Twilio SMS** - SMS messaging (configured)
 - **Gmail IMAP** - Email monitoring and sending (configured)
@@ -61,6 +61,32 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
    ./services/whatsapp/receive_messages.sh --timeout 30 --pretty
    ```
 
+### Telegram Bot Example
+
+1. Copy the example configuration:
+   ```bash
+   cp services/telegram/config.example.yaml services/telegram/config.local.yaml
+   ```
+
+2. Export the bot token referenced by the config
+   `telegram.api_base_url` must use `https://`
+
+3. Send a message:
+   ```bash
+   ./services/telegram/send_message.py 123456789 "Hello from shock-relay!"
+   ```
+
+4. Receive updates:
+   ```bash
+   ./services/telegram/receive_messages.py --timeout 30 --pretty
+   ```
+
+5. Shell entrypoints are also available:
+   ```bash
+   ./services/telegram/send_message.sh 123456789 "Hello from shock-relay!"
+   ./services/telegram/receive_messages.sh --timeout 30 --pretty
+   ```
+
 ## Project Structure
 
 ```
@@ -106,7 +132,7 @@ paths:
 ## Development Status
 
 - ✅ **Signal CLI** - Fully functional with send, receive, and test scripts
-- ⚙️ **Telegram** - Configuration complete, implementation pending
+- ⚙️ **Telegram** - Bot API send/receive/test scripts implemented in Python and native shell
 - ⚙️ **WhatsApp** - Generic HTTPS gateway send/receive/test scripts implemented in Python and native shell
 - ⚙️ **Twilio** - Configuration complete, implementation pending
 - ⚙️ **Gmail IMAP** - Configuration complete, implementation pending
@@ -129,7 +155,7 @@ paths:
 
 Contributions are welcome! This project is in active development. Priority areas:
 
-1. Complete implementations for Telegram, Twilio, and Gmail
+1. Complete implementations for Twilio and Gmail
 2. Add unified relay API layer
 3. Docker containerization
 4. Additional service integrations
