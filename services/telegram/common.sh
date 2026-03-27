@@ -190,7 +190,7 @@ telegram_parse_simple_yaml() {
 
 telegram_load_config() {
   local config_path="$1"
-  local key value env_name
+  local key value
   local insecure_raw ca_cert_path_env bot_token_env
 
   if [[ ! -f "$config_path" ]]; then
