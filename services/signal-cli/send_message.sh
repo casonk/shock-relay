@@ -5,7 +5,8 @@ set -euo pipefail
 # Usage:
 #   ./send_message.sh +15557654321 "hello from Fedora"
 
-CONFIG_FILE="${SIGNAL_CLI_LOCAL_CONFIG:-$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)/config.local.yaml}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${SIGNAL_CLI_LOCAL_CONFIG:-$SCRIPT_DIR/config.local.yaml}"
 
 # Optionally override the message via env (no secrets stored in this repo).
 export SIGNAL_CLI_MESSAGE="${SIGNAL_CLI_MESSAGE:-}"
