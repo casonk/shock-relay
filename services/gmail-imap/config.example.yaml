@@ -1,10 +1,10 @@
 # Template configuration for `gmail-imap`.
-# Gmail access usually requires app passwords and/or OAuth, which must NOT
-# be committed to git.
+# Gmail typically requires an app password for IMAP/SMTP access.
+# Do not commit real credentials/secrets to git.
 
 service:
   name: gmail-imap
-  enabled: false
+  enabled: true
 
 runtime:
   log_level: info
@@ -17,13 +17,62 @@ imap:
   port: 993
   use_ssl: true
 
-  # Provide via environment variables.
+  # Provide via environment variables when possible.
   username_env: GMAIL_IMAP_USERNAME
-  password_env: GMAIL_IMAP_PASSWORD
+  password_env: GMAIL_IMAP_APP_PASSWORD
 
-  # Mailboxes to poll.
+  # Optional direct fields for non-env setups.
+  username:
+  password:
+
+  # Mailboxes checked by check_inbox.py and test_connection.py.
   mailbox: INBOX
+  mailboxes:
+    - INBOX
 
-  # How often (seconds) to check for new messages.
+  # Prefer readonly mailbox access by default.
+  readonly: true
+
+  timeout_seconds: 30
   poll_interval_seconds: 60
 
+  # Optional search charset for IMAP UID SEARCH.
+  search_charset:
+
+  tls:
+    ca_cert_path:
+    ca_cert_path_env:
+    insecure_skip_verify: false
+
+smtp:
+  host: smtp.gmail.com
+  port: 465
+  use_ssl: true
+  starttls: false
+
+  # Defaults to the IMAP credentials when unset.
+  username_env: GMAIL_IMAP_USERNAME
+  password_env: GMAIL_IMAP_APP_PASSWORD
+  username:
+  password:
+
+  # Defaults to smtp.username / GMAIL_IMAP_USERNAME when unset.
+  from_env: GMAIL_IMAP_FROM
+  from:
+
+  timeout_seconds: 30
+
+  # Optional recipient allowlist for safety.
+  allowed_recipients: []
+  allowed_recipient_envs: []
+
+  tls:
+    ca_cert_path:
+    ca_cert_path_env:
+    insecure_skip_verify: false
+
+filters:
+  # Default inbox filters used by check_inbox.py.
+  unseen_only: false
+  from_contains:
+  subject_contains:

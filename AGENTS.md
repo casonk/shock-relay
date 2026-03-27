@@ -184,14 +184,42 @@ twilio:
     insecure_skip_verify: false
 ```
 
-### Gmail IMAP (Planned)
+### Gmail IMAP
 
 **API Style:** IMAP/SMTP protocols
 
-**Expected Interface:**
+**Interface:**
 ```bash
-./services/gmail-imap/send_email.py <to> <subject> <body>
-./services/gmail-imap/check_inbox.py
+./services/gmail-imap/send_email.py <to> <subject> <body> [--config <path>]
+./services/gmail-imap/check_inbox.py [--mailbox <name>] [--limit <count>] [--config <path>]
+./services/gmail-imap/test_connection.py [--config <path>]
+```
+
+**Configuration Required:**
+```yaml
+imap:
+  host: imap.gmail.com
+  port: 993
+  username_env: GMAIL_IMAP_USERNAME
+  password_env: GMAIL_IMAP_APP_PASSWORD
+  mailbox: INBOX
+  mailboxes:
+    - INBOX
+  tls:
+    ca_cert_path_env: GMAIL_IMAP_CA_CERT
+    insecure_skip_verify: false
+
+smtp:
+  host: smtp.gmail.com
+  port: 465
+  username_env: GMAIL_IMAP_USERNAME
+  password_env: GMAIL_IMAP_APP_PASSWORD
+  from_env: GMAIL_IMAP_FROM
+  allowed_recipient_envs:
+    - GMAIL_IMAP_ALLOWED_RECIPIENTS
+  tls:
+    ca_cert_path_env: GMAIL_SMTP_CA_CERT
+    insecure_skip_verify: false
 ```
 
 ## Error Handling
@@ -396,3 +424,11 @@ When implementing new services:
 ## Support
 
 For issues, questions, or contributions, please open an issue on the project repository.
+
+## Agent Memory
+
+Use `./CHATHISTORY.md` as the standard local handoff file for this repo.
+
+- It is local-only and gitignored.
+- Read it after `AGENTS.md` when resuming work.
+- Keep entries brief and focused on service configs, script behavior, blockers, and next steps.
