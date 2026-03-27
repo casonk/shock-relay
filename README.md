@@ -12,7 +12,7 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 - **Telegram** (Bot API) - Basic send/receive/test scripts in Python and native shell
 - **WhatsApp** (generic HTTPS gateway) - Basic send/receive/test scripts in Python and native shell
 - **Twilio SMS** - Basic send/receive/test scripts in Python and native shell
-- **Gmail IMAP** - Email monitoring and sending (configured)
+- **Gmail IMAP** - Basic IMAP/SMTP scaffolding in Python
 
 ## Quick Start
 
@@ -113,6 +113,31 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
    ./services/twilio/receive_messages.sh --to +15557654321 --pretty
    ```
 
+### Gmail IMAP Example
+
+1. Copy the example configuration:
+   ```bash
+   cp services/gmail-imap/config.example.yaml services/gmail-imap/config.local.yaml
+   ```
+
+2. Export the Gmail username and app password referenced by the config
+   `imap.host` and `smtp.host` default to Gmail, and the SMTP sender defaults to the same username
+
+3. Check connectivity:
+   ```bash
+   ./services/gmail-imap/test_connection.py --pretty
+   ```
+
+4. Check inbox messages:
+   ```bash
+   ./services/gmail-imap/check_inbox.py --limit 10 --pretty
+   ```
+
+5. Send an email:
+   ```bash
+   ./services/gmail-imap/send_email.py you@example.com "Hello from shock-relay" "This is a test."
+   ```
+
 ## Project Structure
 
 ```
@@ -161,7 +186,7 @@ paths:
 - ⚙️ **Telegram** - Bot API send/receive/test scripts implemented in Python and native shell
 - ⚙️ **WhatsApp** - Generic HTTPS gateway send/receive/test scripts implemented in Python and native shell
 - ⚙️ **Twilio** - SMS send/receive/test scripts implemented in Python and native shell
-- ⚙️ **Gmail IMAP** - Configuration complete, implementation pending
+- ⚙️ **Gmail IMAP** - IMAP inbox checks, SMTP sends, and connection tests implemented in Python
 
 ## Use Cases
 
@@ -181,10 +206,10 @@ paths:
 
 Contributions are welcome! This project is in active development. Priority areas:
 
-1. Complete the Gmail implementation
-2. Add unified relay API layer
-3. Docker containerization
-4. Additional service integrations
+1. Add unified relay API layer
+2. Docker containerization
+3. Additional service integrations
+4. Expand Gmail workflows beyond the initial IMAP/SMTP scaffolding
 
 ## License
 

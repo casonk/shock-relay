@@ -210,3 +210,6 @@ __marimo__/
 services/*/config.local.yaml
 services/*/config.local.yml
 services/*/config.local.json
+
+# Local agent handoff log
+CHATHISTORY.md
