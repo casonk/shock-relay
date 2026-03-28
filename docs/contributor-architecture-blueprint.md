@@ -1,21 +1,35 @@
 # Contributor Architecture Blueprint
 
-This document is a concise map of how `shock-relay` organizes per-service messaging adapters and shared operational patterns.
+This document is a concise map of how `shock-relay` implements messaging as
+parallel provider adapters rather than a single top-level relay core.
 
 ## High-Level Layers
 
-1. Service-adapter layer (`services/*`)
-   - Each service directory contains the service-specific entrypoints and config templates.
-   - Current adapters include Signal, Telegram, WhatsApp, Twilio, and Gmail IMAP.
-2. Python and shell entrypoint layer
-   - Python scripts provide the main maintained automation surface.
-   - Shell wrappers exist where a native shell interface is useful for quick automation.
-3. Local configuration layer (`config.example.yaml` -> local `config.local.yaml`)
-   - Each service documents its config contract in a tracked example file.
-   - Real credentials remain local-only and are injected through env vars referenced by config.
-4. Shared protocol/helper layer (`common.py`, `common.sh` where present)
-   - Service directories can keep small shared helpers close to the integration that uses them.
-   - Keep the adapters loosely coupled so new services can be added without a global refactor.
+1. Service contract layer (`services/*/config.example.yaml`, local `config.local.yaml`)
+   - Each provider owns its own tracked config template and local runtime config.
+   - Secrets and account-specific values are typically resolved from environment
+     variables referenced by the local config.
+2. Signal subprocess lane (`services/signal-cli/*`)
+   - The Signal scripts are intentionally lightweight and dependency-light.
+   - Python and shell entrypoints extract a small amount of YAML and invoke the
+     local `signal-cli` executable directly.
+3. HTTP adapter family (`services/telegram`, `services/whatsapp`, `services/twilio`)
+   - Each HTTP-backed provider keeps a `common.py` and `common.sh` beside the
+     service entrypoints.
+   - Those helpers own config parsing, env resolution, TLS validation, request
+     helpers, response normalization, and allow-list enforcement.
+   - Send/receive/test entrypoints layer on top of those helpers instead of
+     talking to the remote APIs directly.
+4. Mail protocol lane (`services/gmail-imap/*`)
+   - `gmail-imap/common.py` owns IMAP settings, SMTP settings, TLS behavior,
+     inbox filters, and mailbox normalization.
+   - `check_inbox.py`, `send_email.py`, and `test_connection.py` are thin
+     operator entrypoints over that common protocol layer.
+5. Validation and documentation layer (`.github/workflows/ci.yml`, `docs/`)
+   - CI validates Python syntax with `compileall` and shell entrypoints with
+     `shellcheck`.
+   - The architecture docs should reflect the adapter-family split and the fact
+     that there is not yet a single top-level relay dispatcher.
 
 ## Key Entry Points
 
@@ -24,6 +38,7 @@ This document is a concise map of how `shock-relay` organizes per-service messag
 - `./services/whatsapp/send_message.py`
 - `./services/twilio/send_sms.py`
 - `./services/gmail-imap/test_connection.py`
+- `./services/*/test_send_receive_confirm.py`
 - `.github/workflows/ci.yml`
 
 ## Validation
@@ -33,4 +48,7 @@ python -m compileall services
 find services -name '*.sh' -print0 | xargs -0 shellcheck
 ```
 
-Because integrations depend on external services, keep CI limited to syntax and static validation unless a fully local test harness is added.
+Because integrations depend on external services, CI stays limited to syntax and
+static validation. Use the per-provider `test_send_receive_confirm.*` flows or
+`gmail-imap/test_connection.py` only when the required local credentials and
+remote accounts are available.

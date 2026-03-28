@@ -6,6 +6,12 @@ shock-relay is an open messaging relay for automation scripts, agents, and infra
 
 shock-relay simplifies cross-platform messaging by providing standardized interfaces to multiple messaging services. Whether you're building automation workflows, monitoring systems, or AI agents, shock-relay gives you a consistent way to communicate across different platforms.
 
+The current implementation is organized as parallel provider adapters rather
+than a single repo-wide relay daemon. Signal wraps `signal-cli` directly,
+Telegram / WhatsApp / Twilio each expose shared HTTP helper layers plus Python
+and shell entrypoints, and Gmail IMAP keeps its own IMAP/SMTP helper layer.
+That service-specific CLI surface is the stable interface today.
+
 ## Supported Services
 
 - **Signal** (via signal-cli) - Fully implemented with send/receive capabilities
@@ -143,16 +149,35 @@ shock-relay simplifies cross-platform messaging by providing standardized interf
 ```
 shock-relay/
 ├── services/
-│   ├── signal-cli/       # Signal messaging (Python scripts)
-│   ├── telegram/         # Telegram bot integration
-│   ├── whatsapp/         # WhatsApp gateway
-│   ├── twilio/           # SMS via Twilio
-│   └── gmail-imap/       # Gmail email integration
+│   ├── signal-cli/       # Direct signal-cli wrappers + end-to-end confirm scripts
+│   ├── telegram/         # Bot API helpers + Python/shell send/receive/test flows
+│   ├── whatsapp/         # HTTPS gateway helpers + Python/shell send/receive/test flows
+│   ├── twilio/           # REST SMS helpers + Python/shell send/receive/test flows
+│   └── gmail-imap/       # IMAP/SMTP helper layer + inbox/send/connectivity scripts
 ├── README.md             # This file
 ├── AGENTS.md             # Guide for AI agents
 ├── CLAUDE.md             # Claude-specific integration guide
+├── docs/                 # Contributor architecture docs and rendered diagrams
 └── LICENSE               # Apache 2.0 License
 ```
+
+## Architecture Notes
+
+- Each service keeps a tracked `config.example.yaml` and a local
+  `config.local.yaml`, with secrets resolved from environment variables where
+  possible.
+- `services/signal-cli/` is intentionally dependency-light: the Python and shell
+  entrypoints extract a small amount of YAML and invoke `signal-cli`
+  subprocesses.
+- `services/telegram/`, `services/whatsapp/`, and `services/twilio/` each pair
+  `common.py` with `common.sh` so Python and shell entrypoints share the same
+  config parsing, TLS/auth validation, request helpers, and normalized
+  send/receive/test flows.
+- `services/gmail-imap/common.py` owns the IMAP/SMTP configuration, TLS, inbox
+  filtering, and send logic for the Gmail scripts.
+- Confirmation scripts such as `test_send_receive_confirm.py` are the closest
+  thing to an integration harness today: they send a tagged message, poll for a
+  reply, and then send a confirmation message with the observed response.
 
 ## Configuration
 
