@@ -1,0 +1,71 @@
+@startuml
+!pragma layout smetana
+title shock-relay Repository Architecture
+skinparam shadowing false
+skinparam defaultFontName Monospace
+skinparam packageStyle rectangle
+
+actor Contributor as contributor
+
+package "Documentation + Contracts" #F8FAFC {
+  rectangle "README.md\nAGENTS.md\nCLAUDE.md" as docs #E2E8F0
+  rectangle "docs/contributor-architecture-blueprint.md\nrepo-architecture.puml / .drawio" as archdocs #DBEAFE
+  rectangle "services/*/config.example.yaml\nconfig.local.yaml + env vars" as config #FCE7F3
+}
+
+package "Signal Adapter Lane" #F8FAFC {
+  rectangle "send_message.py\nreceive_messages.py" as signal_py #E0F2FE
+  rectangle "send_message.sh\nreceive_messages.sh" as signal_sh #E0F2FE
+  rectangle "test_send_receive_confirm.py / .sh" as signal_test #FDE68A
+  rectangle "signal-cli subprocess" as signal_cli #DCFCE7
+}
+
+package "HTTP Adapter Family" #F8FAFC {
+  rectangle "telegram/common.py + common.sh\nBot API config, TLS, requests,\nupdate normalization" as telegram #E0F2FE
+  rectangle "whatsapp/common.py + common.sh\nGateway auth, receive cursors,\nmessage normalization" as whatsapp #E0F2FE
+  rectangle "twilio/common.py + common.sh\nBasic auth, message listing,\nSMS normalization" as twilio #E0F2FE
+  rectangle "send / receive / confirm\nentrypoints per provider" as http_entrypoints #FDE68A
+  rectangle "Telegram / WhatsApp / Twilio APIs" as http_apis #DCFCE7
+}
+
+package "Mail Protocol Lane" #F8FAFC {
+  rectangle "gmail-imap/common.py\nIMAP + SMTP config, TLS,\nfilters, mailbox helpers" as gmail_common #E0F2FE
+  rectangle "check_inbox.py\nsend_email.py\ntest_connection.py" as gmail_scripts #FDE68A
+  rectangle "IMAP + SMTP servers" as mail_servers #DCFCE7
+}
+
+package "Verification" #F8FAFC {
+  rectangle ".github/workflows/ci.yml\ncompileall + shellcheck" as ci #DCFCE7
+}
+
+contributor --> docs
+docs --> archdocs
+config --> signal_py
+config --> signal_sh
+config --> telegram
+config --> whatsapp
+config --> twilio
+config --> gmail_common
+
+signal_py --> signal_cli
+signal_sh --> signal_cli
+signal_test --> signal_py
+signal_test --> signal_sh
+
+telegram --> http_entrypoints
+whatsapp --> http_entrypoints
+twilio --> http_entrypoints
+http_entrypoints --> http_apis
+
+gmail_common --> gmail_scripts
+gmail_scripts --> mail_servers
+
+ci --> signal_sh
+ci --> http_entrypoints
+ci --> gmail_scripts
+
+note right of docs
+  No single repo-wide relay dispatcher exists yet.
+  The per-provider CLI scripts are the stable interface.
+end note
+@enduml
