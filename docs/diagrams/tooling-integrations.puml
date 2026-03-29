@@ -1,0 +1,286 @@
+@startuml
+title shock-relay Tooling Integrations
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Monospace
+skinparam componentStyle rectangle
+skinparam linetype ortho
+rectangle ".github/workflows/ci.yml\\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
+rectangle "services/signal-cli/receive_messages.sh\\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
+rectangle "services/signal-cli/send_message.sh\\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
+rectangle "services/signal-cli/test_send_receive_confirm.sh\\n6 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/telegram/common.sh\\n43 detected tools" as source_services_telegram_common_sh #E0F2FE
+rectangle "services/telegram/receive_messages.sh\\n3 detected tools" as source_services_telegram_receive_messages_sh #E0F2FE
+rectangle "services/telegram/send_message.sh\\n2 detected tools" as source_services_telegram_send_message_sh #E0F2FE
+rectangle "services/telegram/test_send_receive_confirm.sh\\n6 detected tools" as source_services_telegram_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/twilio/common.sh\\n41 detected tools" as source_services_twilio_common_sh #E0F2FE
+rectangle "services/twilio/receive_messages.sh\\n3 detected tools" as source_services_twilio_receive_messages_sh #E0F2FE
+rectangle "services/twilio/send_sms.sh\\n2 detected tools" as source_services_twilio_send_sms_sh #E0F2FE
+rectangle "services/twilio/test_send_receive_confirm.sh\\n6 detected tools" as source_services_twilio_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/whatsapp/common.sh\\n48 detected tools" as source_services_whatsapp_common_sh #E0F2FE
+rectangle "services/whatsapp/receive_messages.sh\\n3 detected tools" as source_services_whatsapp_receive_messages_sh #E0F2FE
+rectangle "services/whatsapp/send_message.sh\\n2 detected tools" as source_services_whatsapp_send_message_sh #E0F2FE
+rectangle "services/whatsapp/test_send_receive_confirm.sh\\n6 detected tools" as source_services_whatsapp_test_send_receive_confirm_sh #E0F2FE
+cloud "!in_single" as tool_in_single #FEF3C7
+cloud "((.raw" as tool_raw #FEF3C7
+cloud "(if" as tool_if #FEF3C7
+cloud ".messages" as tool_messages #FEF3C7
+cloud ".result" as tool_result #FEF3C7
+cloud "0" as tool_tool_0 #FEF3C7
+cloud "1" as tool_tool_1 #FEF3C7
+cloud "WHATSAPP_CURL_BASE_ARGS+=(--cacert" as tool_whatsapp_curl_base_args_cacert #FEF3C7
+cloud "[from," as tool_from #FEF3C7
+cloud "[id," as tool_id #FEF3C7
+cloud "[text," as tool_text #FEF3C7
+cloud "[timestamp," as tool_timestamp #FEF3C7
+cloud "[to," as tool_to #FEF3C7
+cloud "actions/checkout" as tool_actions_checkout #FEF3C7
+cloud "actions/setup-python" as tool_actions_setup_python #FEF3C7
+cloud "apt-get" as tool_apt_get #FEF3C7
+cloud "args+=(--data-urlencode" as tool_args_data_urlencode #FEF3C7
+cloud "awk" as tool_awk #FEF3C7
+cloud "cat" as tool_cat #FEF3C7
+cloud "ch" as tool_ch #FEF3C7
+cloud "compileall" as tool_compileall #FEF3C7
+cloud "curl" as tool_curl #FEF3C7
+cloud "curl_args+=(--cacert" as tool_curl_args_cacert #FEF3C7
+cloud "curl_args+=(--data-urlencode" as tool_curl_args_data_urlencode #FEF3C7
+cloud "declare" as tool_declare #FEF3C7
+cloud "def" as tool_def #FEF3C7
+cloud "depth" as tool_depth #FEF3C7
+cloud "depth++" as tool_depth_2 #FEF3C7
+cloud "depth--" as tool_depth_3 #FEF3C7
+cloud "end" as tool_end #FEF3C7
+cloud "full_key" as tool_full_key #FEF3C7
+cloud "head" as tool_head #FEF3C7
+cloud "i" as tool_i #FEF3C7
+cloud "in_double" as tool_in_double #FEF3C7
+cloud "in_single" as tool_in_single_2 #FEF3C7
+cloud "indent" as tool_indent #FEF3C7
+cloud "indents[depth" as tool_indents_depth #FEF3C7
+cloud "j" as tool_j #FEF3C7
+cloud "jq" as tool_jq #FEF3C7
+cloud "key" as tool_key #FEF3C7
+cloud "keys[depth" as tool_keys_depth #FEF3C7
+cloud "line" as tool_line #FEF3C7
+cloud "lines[++line_count]" as tool_lines_line_count #FEF3C7
+cloud "list_indexes[key]++" as tool_list_indexes_key #FEF3C7
+cloud "map(.update_id" as tool_map_update_id #FEF3C7
+cloud "map(normalize_message))," as tool_map_normalize_message #FEF3C7
+cloud "map(normalize_update))," as tool_map_normalize_update #FEF3C7
+cloud "no" as tool_no #FEF3C7
+cloud "null" as tool_null #FEF3C7
+cloud "out" as tool_out #FEF3C7
+cloud "python3" as tool_python3 #FEF3C7
+cloud "q" as tool_q #FEF3C7
+cloud "reduce" as tool_reduce #FEF3C7
+cloud "result" as tool_result_2 #FEF3C7
+cloud "rg" as tool_rg #FEF3C7
+cloud "rm" as tool_rm #FEF3C7
+cloud "s" as tool_s #FEF3C7
+cloud "sed" as tool_sed #FEF3C7
+cloud "separator" as tool_separator #FEF3C7
+cloud "services" as tool_services #FEF3C7
+cloud "signal-cli" as tool_signal_cli #FEF3C7
+cloud "signal_args+=(--bus-name" as tool_signal_args_bus_name #FEF3C7
+cloud "sleep" as tool_sleep #FEF3C7
+cloud "substr(s," as tool_substr_s #FEF3C7
+cloud "telegram_load_config" as tool_telegram_load_config #FEF3C7
+cloud "telegram_send_message_request" as tool_telegram_send_message_request #FEF3C7
+cloud "tonumber" as tool_tonumber #FEF3C7
+cloud "tostring" as tool_tostring #FEF3C7
+cloud "tr" as tool_tr #FEF3C7
+cloud "trimmed" as tool_trimmed #FEF3C7
+cloud "twilio_load_config" as tool_twilio_load_config #FEF3C7
+cloud "twilio_send_sms_request" as tool_twilio_send_sms_request #FEF3C7
+cloud "value" as tool_value #FEF3C7
+cloud "whatsapp_load_config" as tool_whatsapp_load_config #FEF3C7
+cloud "whatsapp_send_message_request" as tool_whatsapp_send_message_request #FEF3C7
+cloud "xargs" as tool_xargs #FEF3C7
+cloud "yes" as tool_yes #FEF3C7
+source_github_workflows_ci_yml --> tool_actions_checkout
+source_github_workflows_ci_yml --> tool_actions_setup_python
+source_github_workflows_ci_yml --> tool_apt_get
+source_github_workflows_ci_yml --> tool_compileall
+source_github_workflows_ci_yml --> tool_services
+source_github_workflows_ci_yml --> tool_xargs
+source_services_signal_cli_receive_messages_sh --> tool_python3
+source_services_signal_cli_receive_messages_sh --> tool_signal_cli
+source_services_signal_cli_send_message_sh --> tool_python3
+source_services_signal_cli_send_message_sh --> tool_signal_cli
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_awk
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_head
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_python3
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_rg
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_signal_cli
+source_services_signal_cli_test_send_receive_confirm_sh --> tool_signal_args_bus_name
+source_services_telegram_common_sh --> tool_in_single
+source_services_telegram_common_sh --> tool_raw
+source_services_telegram_common_sh --> tool_if
+source_services_telegram_common_sh --> tool_result
+source_services_telegram_common_sh --> tool_tool_0
+source_services_telegram_common_sh --> tool_tool_1
+source_services_telegram_common_sh --> tool_cat
+source_services_telegram_common_sh --> tool_ch
+source_services_telegram_common_sh --> tool_curl
+source_services_telegram_common_sh --> tool_curl_args_cacert
+source_services_telegram_common_sh --> tool_declare
+source_services_telegram_common_sh --> tool_def
+source_services_telegram_common_sh --> tool_depth
+source_services_telegram_common_sh --> tool_depth_2
+source_services_telegram_common_sh --> tool_depth_3
+source_services_telegram_common_sh --> tool_end
+source_services_telegram_common_sh --> tool_full_key
+source_services_telegram_common_sh --> tool_i
+source_services_telegram_common_sh --> tool_in_double
+source_services_telegram_common_sh --> tool_in_single_2
+source_services_telegram_common_sh --> tool_indent
+source_services_telegram_common_sh --> tool_indents_depth
+source_services_telegram_common_sh --> tool_j
+source_services_telegram_common_sh --> tool_jq
+source_services_telegram_common_sh --> tool_key
+source_services_telegram_common_sh --> tool_keys_depth
+source_services_telegram_common_sh --> tool_line
+source_services_telegram_common_sh --> tool_lines_line_count
+source_services_telegram_common_sh --> tool_list_indexes_key
+source_services_telegram_common_sh --> tool_map_update_id
+source_services_telegram_common_sh --> tool_map_normalize_update
+source_services_telegram_common_sh --> tool_no
+source_services_telegram_common_sh --> tool_out
+source_services_telegram_common_sh --> tool_q
+source_services_telegram_common_sh --> tool_result_2
+source_services_telegram_common_sh --> tool_rm
+source_services_telegram_common_sh --> tool_s
+source_services_telegram_common_sh --> tool_separator
+source_services_telegram_common_sh --> tool_substr_s
+source_services_telegram_common_sh --> tool_tonumber
+source_services_telegram_common_sh --> tool_trimmed
+source_services_telegram_common_sh --> tool_value
+source_services_telegram_common_sh --> tool_yes
+source_services_telegram_receive_messages_sh --> tool_cat
+source_services_telegram_receive_messages_sh --> tool_jq
+source_services_telegram_receive_messages_sh --> tool_telegram_load_config
+source_services_telegram_send_message_sh --> tool_cat
+source_services_telegram_send_message_sh --> tool_telegram_load_config
+source_services_telegram_test_send_receive_confirm_sh --> tool_cat
+source_services_telegram_test_send_receive_confirm_sh --> tool_declare
+source_services_telegram_test_send_receive_confirm_sh --> tool_jq
+source_services_telegram_test_send_receive_confirm_sh --> tool_sleep
+source_services_telegram_test_send_receive_confirm_sh --> tool_telegram_load_config
+source_services_telegram_test_send_receive_confirm_sh --> tool_telegram_send_message_request
+source_services_twilio_common_sh --> tool_in_single
+source_services_twilio_common_sh --> tool_raw
+source_services_twilio_common_sh --> tool_messages
+source_services_twilio_common_sh --> tool_tool_0
+source_services_twilio_common_sh --> tool_tool_1
+source_services_twilio_common_sh --> tool_args_data_urlencode
+source_services_twilio_common_sh --> tool_cat
+source_services_twilio_common_sh --> tool_ch
+source_services_twilio_common_sh --> tool_curl
+source_services_twilio_common_sh --> tool_curl_args_cacert
+source_services_twilio_common_sh --> tool_declare
+source_services_twilio_common_sh --> tool_depth
+source_services_twilio_common_sh --> tool_depth_2
+source_services_twilio_common_sh --> tool_depth_3
+source_services_twilio_common_sh --> tool_end
+source_services_twilio_common_sh --> tool_full_key
+source_services_twilio_common_sh --> tool_i
+source_services_twilio_common_sh --> tool_in_double
+source_services_twilio_common_sh --> tool_in_single_2
+source_services_twilio_common_sh --> tool_indent
+source_services_twilio_common_sh --> tool_indents_depth
+source_services_twilio_common_sh --> tool_j
+source_services_twilio_common_sh --> tool_key
+source_services_twilio_common_sh --> tool_keys_depth
+source_services_twilio_common_sh --> tool_line
+source_services_twilio_common_sh --> tool_lines_line_count
+source_services_twilio_common_sh --> tool_list_indexes_key
+source_services_twilio_common_sh --> tool_no
+source_services_twilio_common_sh --> tool_out
+source_services_twilio_common_sh --> tool_q
+source_services_twilio_common_sh --> tool_result_2
+source_services_twilio_common_sh --> tool_rm
+source_services_twilio_common_sh --> tool_s
+source_services_twilio_common_sh --> tool_sed
+source_services_twilio_common_sh --> tool_separator
+source_services_twilio_common_sh --> tool_substr_s
+source_services_twilio_common_sh --> tool_tostring
+source_services_twilio_common_sh --> tool_tr
+source_services_twilio_common_sh --> tool_trimmed
+source_services_twilio_common_sh --> tool_value
+source_services_twilio_common_sh --> tool_yes
+source_services_twilio_receive_messages_sh --> tool_cat
+source_services_twilio_receive_messages_sh --> tool_jq
+source_services_twilio_receive_messages_sh --> tool_twilio_load_config
+source_services_twilio_send_sms_sh --> tool_cat
+source_services_twilio_send_sms_sh --> tool_twilio_load_config
+source_services_twilio_test_send_receive_confirm_sh --> tool_cat
+source_services_twilio_test_send_receive_confirm_sh --> tool_declare
+source_services_twilio_test_send_receive_confirm_sh --> tool_jq
+source_services_twilio_test_send_receive_confirm_sh --> tool_sleep
+source_services_twilio_test_send_receive_confirm_sh --> tool_twilio_load_config
+source_services_twilio_test_send_receive_confirm_sh --> tool_twilio_send_sms_request
+source_services_whatsapp_common_sh --> tool_in_single
+source_services_whatsapp_common_sh --> tool_raw
+source_services_whatsapp_common_sh --> tool_tool_0
+source_services_whatsapp_common_sh --> tool_tool_1
+source_services_whatsapp_common_sh --> tool_whatsapp_curl_base_args_cacert
+source_services_whatsapp_common_sh --> tool_from
+source_services_whatsapp_common_sh --> tool_id
+source_services_whatsapp_common_sh --> tool_text
+source_services_whatsapp_common_sh --> tool_timestamp
+source_services_whatsapp_common_sh --> tool_to
+source_services_whatsapp_common_sh --> tool_cat
+source_services_whatsapp_common_sh --> tool_ch
+source_services_whatsapp_common_sh --> tool_curl_args_data_urlencode
+source_services_whatsapp_common_sh --> tool_declare
+source_services_whatsapp_common_sh --> tool_def
+source_services_whatsapp_common_sh --> tool_depth
+source_services_whatsapp_common_sh --> tool_depth_2
+source_services_whatsapp_common_sh --> tool_depth_3
+source_services_whatsapp_common_sh --> tool_end
+source_services_whatsapp_common_sh --> tool_full_key
+source_services_whatsapp_common_sh --> tool_i
+source_services_whatsapp_common_sh --> tool_in_double
+source_services_whatsapp_common_sh --> tool_in_single_2
+source_services_whatsapp_common_sh --> tool_indent
+source_services_whatsapp_common_sh --> tool_indents_depth
+source_services_whatsapp_common_sh --> tool_j
+source_services_whatsapp_common_sh --> tool_key
+source_services_whatsapp_common_sh --> tool_keys_depth
+source_services_whatsapp_common_sh --> tool_line
+source_services_whatsapp_common_sh --> tool_lines_line_count
+source_services_whatsapp_common_sh --> tool_list_indexes_key
+source_services_whatsapp_common_sh --> tool_map_normalize_message
+source_services_whatsapp_common_sh --> tool_no
+source_services_whatsapp_common_sh --> tool_null
+source_services_whatsapp_common_sh --> tool_out
+source_services_whatsapp_common_sh --> tool_q
+source_services_whatsapp_common_sh --> tool_reduce
+source_services_whatsapp_common_sh --> tool_result_2
+source_services_whatsapp_common_sh --> tool_rm
+source_services_whatsapp_common_sh --> tool_s
+source_services_whatsapp_common_sh --> tool_sed
+source_services_whatsapp_common_sh --> tool_separator
+source_services_whatsapp_common_sh --> tool_substr_s
+source_services_whatsapp_common_sh --> tool_tostring
+source_services_whatsapp_common_sh --> tool_tr
+source_services_whatsapp_common_sh --> tool_trimmed
+source_services_whatsapp_common_sh --> tool_value
+source_services_whatsapp_common_sh --> tool_yes
+source_services_whatsapp_receive_messages_sh --> tool_cat
+source_services_whatsapp_receive_messages_sh --> tool_jq
+source_services_whatsapp_receive_messages_sh --> tool_whatsapp_load_config
+source_services_whatsapp_send_message_sh --> tool_cat
+source_services_whatsapp_send_message_sh --> tool_whatsapp_load_config
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_cat
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_declare
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_jq
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_sleep
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_config
+source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
+note as toolingGraphSummary
+Scanned 16 tooling entrypoints.
+Detected 77 third-party tools.
+end note
+@enduml
