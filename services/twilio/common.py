@@ -48,6 +48,24 @@ def default_config_path() -> str:
     )
 
 
+def _resolve_keepass_value(entry: str, field: str) -> str:
+    """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo."""
+    if not entry:
+        return ""
+    import sys as _sys
+    _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
+    _src = str(_ap_root / "src")
+    if _src not in _sys.path:
+        _sys.path.insert(0, _src)
+    from auto_pass.envfile import load_config_environment  # noqa: PLC0415
+    from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+    _ap_env = _ap_root / "config" / "auto-pass.env.local"
+    if _ap_env.is_file():
+        load_config_environment(_ap_env)
+    result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
+    return result.get("value", "")
+
+
 def load_config(config_path: str) -> TwilioConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
@@ -63,28 +81,28 @@ def load_config(config_path: str) -> TwilioConfig:
     if not api_base_url.lower().startswith("https://"):
         raise ConfigError("ERROR: twilio.api_base_url must use https://")
 
-    account_sid = optional_string(twilio_cfg.get("account_sid")) or resolve_env_value(
-        optional_string(twilio_cfg.get("account_sid_env")),
-        field_name="twilio.account_sid_env",
-        required=False,
+    account_sid = (
+        optional_string(twilio_cfg.get("account_sid"))
+        or resolve_env_value(optional_string(twilio_cfg.get("account_sid_env")), field_name="twilio.account_sid_env", required=False)
+        or _resolve_keepass_value(optional_string(twilio_cfg.get("account_sid_keepass_entry")) or "", "username")
     )
-    auth_token = optional_string(twilio_cfg.get("auth_token")) or resolve_env_value(
-        optional_string(twilio_cfg.get("auth_token_env")),
-        field_name="twilio.auth_token_env",
-        required=False,
+    auth_token = (
+        optional_string(twilio_cfg.get("auth_token"))
+        or resolve_env_value(optional_string(twilio_cfg.get("auth_token_env")), field_name="twilio.auth_token_env", required=False)
+        or _resolve_keepass_value(optional_string(twilio_cfg.get("auth_token_keepass_entry")) or "", "password")
     )
-    from_phone = optional_string(twilio_cfg.get("from_phone")) or resolve_env_value(
-        optional_string(twilio_cfg.get("from_phone_env")),
-        field_name="twilio.from_phone_env",
-        required=False,
+    from_phone = (
+        optional_string(twilio_cfg.get("from_phone"))
+        or resolve_env_value(optional_string(twilio_cfg.get("from_phone_env")), field_name="twilio.from_phone_env", required=False)
+        or _resolve_keepass_value(optional_string(twilio_cfg.get("from_phone_keepass_entry")) or "", "username")
     )
 
     if not account_sid:
-        raise ConfigError("ERROR: Missing twilio.account_sid or twilio.account_sid_env in config.local.yaml")
+        raise ConfigError("ERROR: Missing twilio.account_sid, twilio.account_sid_env, or twilio.account_sid_keepass_entry in config.local.yaml")
     if not auth_token:
-        raise ConfigError("ERROR: Missing twilio.auth_token or twilio.auth_token_env in config.local.yaml")
+        raise ConfigError("ERROR: Missing twilio.auth_token, twilio.auth_token_env, or twilio.auth_token_keepass_entry in config.local.yaml")
     if not from_phone:
-        raise ConfigError("ERROR: Missing twilio.from_phone or twilio.from_phone_env in config.local.yaml")
+        raise ConfigError("ERROR: Missing twilio.from_phone, twilio.from_phone_env, or twilio.from_phone_keepass_entry in config.local.yaml")
 
     timeout_seconds = parse_int(
         twilio_cfg.get("timeout_seconds"),

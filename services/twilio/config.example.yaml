@@ -12,16 +12,24 @@ paths:
   data_dir: ./data/twilio
 
 twilio:
-  # Environment variables (names) the orchestrator should read.
+  # Credentials can be supplied via environment variable names, direct values,
+  # or KeePassXC entry paths (auto-pass). Resolution order: direct > env > keepass.
+
+  # Option A: environment variable names the orchestrator should read.
   account_sid_env: TWILIO_ACCOUNT_SID
   auth_token_env: TWILIO_AUTH_TOKEN
 
-  # Optional direct fields for non-env setups.
+  # Option B: KeePassXC entry paths (resolved via auto-pass sibling repo).
+  # account_sid_keepass_entry: Twilio/Twilio#API-Main  (reads UserName field)
+  # auth_token_keepass_entry: Twilio/Twilio#Token      (reads Password field)
+
+  # Option C: direct values (not recommended; prefer env or keepass).
   account_sid:
   auth_token:
 
-  # The phone number Twilio should use as the sender.
+  # Sender phone number — same three-option resolution applies.
   from_phone_env: TWILIO_FROM_PHONE
+  # from_phone_keepass_entry: Twilio/Twilio             (reads UserName field)
   from_phone:
 
   # Base URL for Twilio REST API. HTTPS required.
