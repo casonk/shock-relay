@@ -85,12 +85,14 @@ def _resolve_keepass_value(entry: str, field: str) -> str:
     if not entry:
         return ""
     import sys as _sys
+
     _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
     _src = str(_ap_root / "src")
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
     from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
         load_config_environment(_ap_env)
@@ -102,7 +104,9 @@ def load_config(config_path: str) -> GmailImapConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
+        raise ConfigError(
+            f"ERROR: Cannot read config file: {config_path} ({exc})"
+        ) from exc
 
     config = parse_simple_yaml(config_text)
     imap_cfg = as_mapping(config.get("imap"), "imap")
@@ -112,7 +116,9 @@ def load_config(config_path: str) -> GmailImapConfig:
     imap_tls_cfg = as_mapping(imap_cfg.get("tls"), "imap.tls", allow_empty=True)
     smtp_tls_cfg = as_mapping(smtp_cfg.get("tls"), "smtp.tls", allow_empty=True)
 
-    imap_use_ssl = parse_bool(imap_cfg.get("use_ssl"), default=True, field_name="imap.use_ssl")
+    imap_use_ssl = parse_bool(
+        imap_cfg.get("use_ssl"), default=True, field_name="imap.use_ssl"
+    )
     imap_host = optional_string(imap_cfg.get("host")) or "imap.gmail.com"
     imap_port = parse_int(
         imap_cfg.get("port"),
@@ -121,13 +127,25 @@ def load_config(config_path: str) -> GmailImapConfig:
     )
     imap_username = (
         optional_string(imap_cfg.get("username"))
-        or resolve_env_value(optional_string(imap_cfg.get("username_env")), field_name="imap.username_env", required=False)
-        or _resolve_keepass_value(optional_string(imap_cfg.get("username_keepass_entry")) or "", "username")
+        or resolve_env_value(
+            optional_string(imap_cfg.get("username_env")),
+            field_name="imap.username_env",
+            required=False,
+        )
+        or _resolve_keepass_value(
+            optional_string(imap_cfg.get("username_keepass_entry")) or "", "username"
+        )
     )
     imap_password = (
         optional_string(imap_cfg.get("password"))
-        or resolve_env_value(optional_string(imap_cfg.get("password_env")), field_name="imap.password_env", required=False)
-        or _resolve_keepass_value(optional_string(imap_cfg.get("password_keepass_entry")) or "", "password")
+        or resolve_env_value(
+            optional_string(imap_cfg.get("password_env")),
+            field_name="imap.password_env",
+            required=False,
+        )
+        or _resolve_keepass_value(
+            optional_string(imap_cfg.get("password_keepass_entry")) or "", "password"
+        )
     )
     imap_timeout_seconds = parse_int(
         imap_cfg.get("timeout_seconds"),
@@ -139,15 +157,23 @@ def load_config(config_path: str) -> GmailImapConfig:
         default=60,
         field_name="imap.poll_interval_seconds",
     )
-    imap_readonly = parse_bool(imap_cfg.get("readonly"), default=True, field_name="imap.readonly")
+    imap_readonly = parse_bool(
+        imap_cfg.get("readonly"), default=True, field_name="imap.readonly"
+    )
     imap_search_charset = optional_string(imap_cfg.get("search_charset")) or None
     imap_mailboxes = resolve_imap_mailboxes(imap_cfg)
     imap_tls = load_tls_settings(imap_tls_cfg, prefix="imap.tls")
 
-    smtp_use_ssl = parse_bool(smtp_cfg.get("use_ssl"), default=True, field_name="smtp.use_ssl")
-    smtp_starttls = parse_bool(smtp_cfg.get("starttls"), default=False, field_name="smtp.starttls")
+    smtp_use_ssl = parse_bool(
+        smtp_cfg.get("use_ssl"), default=True, field_name="smtp.use_ssl"
+    )
+    smtp_starttls = parse_bool(
+        smtp_cfg.get("starttls"), default=False, field_name="smtp.starttls"
+    )
     if smtp_use_ssl and smtp_starttls:
-        raise ConfigError("ERROR: Configure either smtp.use_ssl or smtp.starttls, not both")
+        raise ConfigError(
+            "ERROR: Configure either smtp.use_ssl or smtp.starttls, not both"
+        )
     smtp_host = optional_string(smtp_cfg.get("host")) or "smtp.gmail.com"
     smtp_port = parse_int(
         smtp_cfg.get("port"),
@@ -156,15 +182,27 @@ def load_config(config_path: str) -> GmailImapConfig:
     )
     smtp_username = (
         optional_string(smtp_cfg.get("username"))
-        or resolve_env_value(optional_string(smtp_cfg.get("username_env")), field_name="smtp.username_env", required=False)
-        or _resolve_keepass_value(optional_string(smtp_cfg.get("username_keepass_entry")) or "", "username")
+        or resolve_env_value(
+            optional_string(smtp_cfg.get("username_env")),
+            field_name="smtp.username_env",
+            required=False,
+        )
+        or _resolve_keepass_value(
+            optional_string(smtp_cfg.get("username_keepass_entry")) or "", "username"
+        )
     )
     if not smtp_username:
         smtp_username = imap_username
     smtp_password = (
         optional_string(smtp_cfg.get("password"))
-        or resolve_env_value(optional_string(smtp_cfg.get("password_env")), field_name="smtp.password_env", required=False)
-        or _resolve_keepass_value(optional_string(smtp_cfg.get("password_keepass_entry")) or "", "password")
+        or resolve_env_value(
+            optional_string(smtp_cfg.get("password_env")),
+            field_name="smtp.password_env",
+            required=False,
+        )
+        or _resolve_keepass_value(
+            optional_string(smtp_cfg.get("password_keepass_entry")) or "", "password"
+        )
     )
     if not smtp_password:
         smtp_password = imap_password
@@ -211,7 +249,11 @@ def load_config(config_path: str) -> GmailImapConfig:
             tls=smtp_tls,
         ),
         filters=InboxFilters(
-            unseen_only=parse_bool(filters_cfg.get("unseen_only"), default=False, field_name="filters.unseen_only"),
+            unseen_only=parse_bool(
+                filters_cfg.get("unseen_only"),
+                default=False,
+                field_name="filters.unseen_only",
+            ),
             from_contains=optional_string(filters_cfg.get("from_contains")),
             subject_contains=optional_string(filters_cfg.get("subject_contains")),
         ),
@@ -249,7 +291,9 @@ def send_email(
 
     try:
         with open_smtp_connection(config) as client:
-            client.send_message(message, from_addr=config.smtp.from_address, to_addrs=all_recipients)
+            client.send_message(
+                message, from_addr=config.smtp.from_address, to_addrs=all_recipients
+            )
     except MailError:
         raise
     except Exception as exc:
@@ -276,10 +320,16 @@ def list_messages(
 ) -> Dict[str, Any]:
     validate_imap(config)
     selected_mailboxes = normalize_mailboxes(mailboxes or config.imap.mailboxes)
-    effective_unseen_only = config.filters.unseen_only if unseen_only is None else unseen_only
-    effective_from_contains = (from_contains if from_contains is not None else config.filters.from_contains).strip()
+    effective_unseen_only = (
+        config.filters.unseen_only if unseen_only is None else unseen_only
+    )
+    effective_from_contains = (
+        from_contains if from_contains is not None else config.filters.from_contains
+    ).strip()
     effective_subject_contains = (
-        subject_contains if subject_contains is not None else config.filters.subject_contains
+        subject_contains
+        if subject_contains is not None
+        else config.filters.subject_contains
     ).strip()
     effective_limit = max(1, limit)
 
@@ -297,7 +347,9 @@ def list_messages(
                     subject_contains=effective_subject_contains,
                     since_days=since_days,
                 )
-                status, data = conn.uid("search", config.imap.search_charset, *search_terms)
+                status, data = conn.uid(
+                    "search", config.imap.search_charset, *search_terms
+                )
                 if status != "OK":
                     raise MailError(f"IMAP UID search failed in {mailbox}: {status}")
 
@@ -308,7 +360,9 @@ def list_messages(
                 for uid in reversed(uids[-effective_limit:]):
                     status, msg_data = conn.uid("fetch", str(uid), "(RFC822)")
                     if status != "OK":
-                        raise MailError(f"IMAP UID fetch failed for {uid} in {mailbox}: {status}")
+                        raise MailError(
+                            f"IMAP UID fetch failed for {uid} in {mailbox}: {status}"
+                        )
                     payload_bytes = extract_fetch_payload(msg_data)
                     if not payload_bytes:
                         continue
@@ -316,7 +370,9 @@ def list_messages(
     except MailError:
         raise
     except Exception as exc:
-        raise MailError(f"IMAP inbox check failed: {type(exc).__name__}: {exc}") from exc
+        raise MailError(
+            f"IMAP inbox check failed: {type(exc).__name__}: {exc}"
+        ) from exc
 
     messages.sort(
         key=lambda item: (
@@ -330,18 +386,24 @@ def list_messages(
     }
 
 
-def test_imap_connection(config: GmailImapConfig, mailbox: Optional[str] = None) -> Dict[str, Any]:
+def test_imap_connection(
+    config: GmailImapConfig, mailbox: Optional[str] = None
+) -> Dict[str, Any]:
     validate_imap(config)
     selected_mailbox = mailbox or config.imap.mailboxes[0]
     try:
         with open_imap_connection(config) as conn:
             status, data = conn.select(selected_mailbox, readonly=True)
             if status != "OK":
-                raise MailError(f"IMAP mailbox select failed: {selected_mailbox} ({status})")
+                raise MailError(
+                    f"IMAP mailbox select failed: {selected_mailbox} ({status})"
+                )
     except MailError:
         raise
     except Exception as exc:
-        raise MailError(f"IMAP connection test failed: {type(exc).__name__}: {exc}") from exc
+        raise MailError(
+            f"IMAP connection test failed: {type(exc).__name__}: {exc}"
+        ) from exc
     return {
         "host": config.imap.host,
         "port": config.imap.port,
@@ -359,7 +421,9 @@ def test_smtp_connection(config: GmailImapConfig) -> Dict[str, Any]:
     except MailError:
         raise
     except Exception as exc:
-        raise MailError(f"SMTP connection test failed: {type(exc).__name__}: {exc}") from exc
+        raise MailError(
+            f"SMTP connection test failed: {type(exc).__name__}: {exc}"
+        ) from exc
     smtp_status = ""
     if isinstance(status, tuple) and status:
         smtp_status = str(status[0])
@@ -489,6 +553,50 @@ def normalize_message(mailbox: str, uid: int, payload_bytes: bytes) -> Dict[str,
     }
 
 
+def extract_attachments(payload_bytes: bytes) -> List[Tuple[str, str, bytes]]:
+    """Return a list of (filename, content_type, data) for all MIME attachments.
+
+    Only parts with ``Content-Disposition: attachment`` or an explicit filename
+    are included.  Inline text/html body parts are excluded.
+    """
+    message = message_from_bytes(payload_bytes, policy=default_policy)
+    results: List[Tuple[str, str, bytes]] = []
+    if not message.is_multipart():
+        return results
+    for part in message.walk():
+        content_type = str(part.get_content_type() or "")
+        disposition = str(part.get_content_disposition() or "")
+        filename = part.get_filename()
+        if filename:
+            filename = decode_mime_header(filename)
+        if not filename and disposition != "attachment":
+            continue
+        data = part.get_payload(decode=True)
+        if not isinstance(data, bytes) or not data:
+            continue
+        results.append((filename or "attachment", content_type, data))
+    return results
+
+
+def mark_message_read(conn: Any, uid: int) -> None:
+    """Add the \\Seen flag to the message identified by *uid*."""
+    conn.uid("store", str(uid), "+FLAGS", r"(\Seen)")
+
+
+def move_message(conn: Any, uid: int, dest_mailbox: str) -> None:
+    """Copy *uid* to *dest_mailbox* then mark the original for deletion.
+
+    The caller must call ``conn.expunge()`` (or close/re-select) to finalise
+    the deletion from the source mailbox.  Gmail's IMAP implementation treats
+    folders as labels, so this effectively applies the destination label and
+    removes the source label.
+    """
+    # Ensure the destination label/folder exists before copying.
+    conn.create(dest_mailbox)
+    conn.uid("copy", str(uid), dest_mailbox)
+    conn.uid("store", str(uid), "+FLAGS", r"(\Deleted)")
+
+
 def extract_message_bodies(message: Any) -> Tuple[str, str]:
     text_parts: List[str] = []
     html_parts: List[str] = []
@@ -515,7 +623,10 @@ def extract_message_bodies(message: Any) -> Tuple[str, str]:
         else:
             text_parts.append(decoded)
 
-    return "\n".join(filter(None, text_parts)).strip(), "\n".join(filter(None, html_parts)).strip()
+    return (
+        "\n".join(filter(None, text_parts)).strip(),
+        "\n".join(filter(None, html_parts)).strip(),
+    )
 
 
 def decode_part_text(part: Any) -> str:
@@ -622,7 +733,9 @@ def validate_recipients(config: GmailImapConfig, recipients: List[str]) -> None:
     allowed = {canonical_email(item) for item in config.smtp.allowed_recipients}
     for recipient in recipients:
         if canonical_email(recipient) not in allowed:
-            raise ConfigError(f"ERROR: Recipient is not allowed by smtp.allowed_recipients: {recipient}")
+            raise ConfigError(
+                f"ERROR: Recipient is not allowed by smtp.allowed_recipients: {recipient}"
+            )
 
 
 def canonical_email(value: Any) -> str:
@@ -632,9 +745,13 @@ def canonical_email(value: Any) -> str:
 
 def validate_imap(config: GmailImapConfig) -> None:
     if not config.imap.username:
-        raise ConfigError("ERROR: Missing imap.username or imap.username_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing imap.username or imap.username_env in config.local.yaml"
+        )
     if not config.imap.password:
-        raise ConfigError("ERROR: Missing imap.password or imap.password_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing imap.password or imap.password_env in config.local.yaml"
+        )
     if not config.imap.host:
         raise ConfigError("ERROR: Missing imap.host in config.local.yaml")
 
@@ -643,11 +760,17 @@ def validate_smtp(config: GmailImapConfig) -> None:
     if not config.smtp.host:
         raise ConfigError("ERROR: Missing smtp.host in config.local.yaml")
     if not config.smtp.from_address:
-        raise ConfigError("ERROR: Missing smtp.from or smtp.from_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing smtp.from or smtp.from_env in config.local.yaml"
+        )
     if not config.smtp.username:
-        raise ConfigError("ERROR: Missing smtp.username or smtp.username_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing smtp.username or smtp.username_env in config.local.yaml"
+        )
     if not config.smtp.password:
-        raise ConfigError("ERROR: Missing smtp.password or smtp.password_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing smtp.password or smtp.password_env in config.local.yaml"
+        )
 
 
 def load_tls_settings(tls_cfg: Dict[str, Any], prefix: str) -> TlsSettings:
@@ -662,7 +785,9 @@ def load_tls_settings(tls_cfg: Dict[str, Any], prefix: str) -> TlsSettings:
         required=False,
     )
     if insecure_skip_verify and ca_cert_path:
-        raise ConfigError(f"ERROR: Configure either {prefix}.insecure_skip_verify or a CA cert path, not both")
+        raise ConfigError(
+            f"ERROR: Configure either {prefix}.insecure_skip_verify or a CA cert path, not both"
+        )
     if ca_cert_path and not Path(ca_cert_path).is_file():
         raise ConfigError(f"ERROR: CA certificate file does not exist: {ca_cert_path}")
     return TlsSettings(
@@ -695,7 +820,11 @@ def extract_fetch_payload(msg_data: Any) -> bytes:
     if not isinstance(msg_data, list):
         return b""
     for item in msg_data:
-        if isinstance(item, tuple) and len(item) >= 2 and isinstance(item[1], (bytes, bytearray)):
+        if (
+            isinstance(item, tuple)
+            and len(item) >= 2
+            and isinstance(item[1], (bytes, bytearray))
+        ):
             return bytes(item[1])
     return b""
 
@@ -721,11 +850,17 @@ def parse_int_uid_list(data: Any) -> List[int]:
 
 
 def read_allowed_recipients(smtp_cfg: Dict[str, Any]) -> List[str]:
-    recipients = read_scalar_list(smtp_cfg.get("allowed_recipients"), "smtp.allowed_recipients")
-    env_names = read_scalar_list(smtp_cfg.get("allowed_recipient_envs"), "smtp.allowed_recipient_envs")
+    recipients = read_scalar_list(
+        smtp_cfg.get("allowed_recipients"), "smtp.allowed_recipients"
+    )
+    env_names = read_scalar_list(
+        smtp_cfg.get("allowed_recipient_envs"), "smtp.allowed_recipient_envs"
+    )
 
     for env_name in env_names:
-        raw_value = resolve_env_value(env_name, field_name=f"smtp.allowed_recipient_envs[{env_name}]")
+        raw_value = resolve_env_value(
+            env_name, field_name=f"smtp.allowed_recipient_envs[{env_name}]"
+        )
         recipients.extend(split_values(raw_value))
 
     return normalize_email_list(recipients)
@@ -745,7 +880,9 @@ def read_scalar_list(value: Any, field_name: str) -> List[str]:
     for item in value:
         item_str = optional_string(item)
         if not item_str:
-            raise ConfigError(f"ERROR: {field_name} must contain only non-empty scalars")
+            raise ConfigError(
+                f"ERROR: {field_name} must contain only non-empty scalars"
+            )
         result.append(item_str)
     return result
 
@@ -783,18 +920,24 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(
+    env_name: Optional[str], field_name: str, required: bool = True
+) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
     if value:
         return value
     if required:
-        raise ConfigError(f"ERROR: Environment variable {env_name} referenced by {field_name} is not set")
+        raise ConfigError(
+            f"ERROR: Environment variable {env_name} referenced by {field_name} is not set"
+        )
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(
+    value: Any, field_name: str, allow_empty: bool = False
+) -> Dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -824,7 +967,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
 
         if stripped.startswith("- "):
             if not isinstance(parent, list):
-                raise ConfigError(f"ERROR: Unexpected YAML list item near line {index + 1}")
+                raise ConfigError(
+                    f"ERROR: Unexpected YAML list item near line {index + 1}"
+                )
             parent.append(parse_scalar(stripped[2:].strip()))
             continue
 
@@ -855,7 +1000,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(
+    lines: List[str], start_index: int, current_indent: int
+) -> Optional[type]:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():
@@ -894,7 +1041,11 @@ def parse_scalar(value_text: str) -> Any:
         return {}
     if re.fullmatch(r"-?\d+", value_text):
         return int(value_text)
-    if len(value_text) >= 2 and value_text[0] == value_text[-1] and value_text[0] in ("'", '"'):
+    if (
+        len(value_text) >= 2
+        and value_text[0] == value_text[-1]
+        and value_text[0] in ("'", '"')
+    ):
         if value_text[0] == "'":
             return value_text[1:-1].replace("''", "'")
         return bytes(value_text[1:-1], "utf-8").decode("unicode_escape")
