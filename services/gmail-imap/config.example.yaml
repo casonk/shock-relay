@@ -17,11 +17,20 @@ imap:
   port: 993
   use_ssl: true
 
-  # Provide via environment variables when possible.
+  # Credentials can be supplied via environment variable names, direct values,
+  # or KeePassXC entry paths (auto-pass). Resolution order: direct > env > keepass.
+
+  # Option A: environment variable names.
   username_env: GMAIL_IMAP_USERNAME
   password_env: GMAIL_IMAP_APP_PASSWORD
 
-  # Optional direct fields for non-env setups.
+  # Option B: KeePassXC entry path (auto-pass sibling repo).
+  # username_keepass_entry resolves the UserName field of the entry.
+  # password_keepass_entry resolves the Password field of the entry.
+  # username_keepass_entry: CHOOSE_KEEPASS_ENTRY_PATH
+  # password_keepass_entry: CHOOSE_KEEPASS_ENTRY_PATH
+
+  # Option C: direct values (not recommended).
   username:
   password:
 

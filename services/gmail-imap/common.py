@@ -80,6 +80,24 @@ def default_config_path() -> str:
     )
 
 
+def _resolve_keepass_value(entry: str, field: str) -> str:
+    """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo."""
+    if not entry:
+        return ""
+    import sys as _sys
+    _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
+    _src = str(_ap_root / "src")
+    if _src not in _sys.path:
+        _sys.path.insert(0, _src)
+    from auto_pass.envfile import load_config_environment  # noqa: PLC0415
+    from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+    _ap_env = _ap_root / "config" / "auto-pass.env.local"
+    if _ap_env.is_file():
+        load_config_environment(_ap_env)
+    result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
+    return result.get("value", "")
+
+
 def load_config(config_path: str) -> GmailImapConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
@@ -101,15 +119,15 @@ def load_config(config_path: str) -> GmailImapConfig:
         default=993 if imap_use_ssl else 143,
         field_name="imap.port",
     )
-    imap_username = optional_string(imap_cfg.get("username")) or resolve_env_value(
-        optional_string(imap_cfg.get("username_env")),
-        field_name="imap.username_env",
-        required=False,
+    imap_username = (
+        optional_string(imap_cfg.get("username"))
+        or resolve_env_value(optional_string(imap_cfg.get("username_env")), field_name="imap.username_env", required=False)
+        or _resolve_keepass_value(optional_string(imap_cfg.get("username_keepass_entry")) or "", "username")
     )
-    imap_password = optional_string(imap_cfg.get("password")) or resolve_env_value(
-        optional_string(imap_cfg.get("password_env")),
-        field_name="imap.password_env",
-        required=False,
+    imap_password = (
+        optional_string(imap_cfg.get("password"))
+        or resolve_env_value(optional_string(imap_cfg.get("password_env")), field_name="imap.password_env", required=False)
+        or _resolve_keepass_value(optional_string(imap_cfg.get("password_keepass_entry")) or "", "password")
     )
     imap_timeout_seconds = parse_int(
         imap_cfg.get("timeout_seconds"),
@@ -136,17 +154,17 @@ def load_config(config_path: str) -> GmailImapConfig:
         default=465 if smtp_use_ssl else 587,
         field_name="smtp.port",
     )
-    smtp_username = optional_string(smtp_cfg.get("username")) or resolve_env_value(
-        optional_string(smtp_cfg.get("username_env")),
-        field_name="smtp.username_env",
-        required=False,
+    smtp_username = (
+        optional_string(smtp_cfg.get("username"))
+        or resolve_env_value(optional_string(smtp_cfg.get("username_env")), field_name="smtp.username_env", required=False)
+        or _resolve_keepass_value(optional_string(smtp_cfg.get("username_keepass_entry")) or "", "username")
     )
     if not smtp_username:
         smtp_username = imap_username
-    smtp_password = optional_string(smtp_cfg.get("password")) or resolve_env_value(
-        optional_string(smtp_cfg.get("password_env")),
-        field_name="smtp.password_env",
-        required=False,
+    smtp_password = (
+        optional_string(smtp_cfg.get("password"))
+        or resolve_env_value(optional_string(smtp_cfg.get("password_env")), field_name="smtp.password_env", required=False)
+        or _resolve_keepass_value(optional_string(smtp_cfg.get("password_keepass_entry")) or "", "password")
     )
     if not smtp_password:
         smtp_password = imap_password
