@@ -80,22 +80,31 @@ def default_config_path() -> str:
     )
 
 
-def _resolve_keepass_value(entry: str, field: str) -> str:
-    """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo."""
+def _resolve_keepass_value(entry: str, field: str, profile: str = "") -> str:
+    """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo.
+
+    *profile* overrides the ``AUTO_PASS_PROFILE`` env var set by the env file,
+    matching the same pattern used in intake's settings.toml ``auto_pass_profile``.
+    """
     if not entry:
         return ""
+    import os as _os
     import sys as _sys
 
     _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
     _src = str(_ap_root / "src")
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
+    from auto_pass.envfile import apply_keepass_profile_environment  # noqa: PLC0415
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
     from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
 
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
         load_config_environment(_ap_env)
+    if profile:
+        _os.environ["AUTO_PASS_PROFILE"] = profile
+        apply_keepass_profile_environment(override=True)
     result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
     return result.get("value", "")
 
@@ -109,6 +118,11 @@ def load_config(config_path: str) -> GmailImapConfig:
         ) from exc
 
     config = parse_simple_yaml(config_text)
+    # Optional profile override — same pattern as intake's auto_pass_profile setting.
+    # Set keepass_profile in config.local.yaml to select which KeePassXC profile to use
+    # (e.g. "master") when the AUTO_PASS_PROFILE env var points to a profile that has
+    # no matching database credentials.
+    keepass_profile = optional_string(config.get("keepass_profile"))
     imap_cfg = as_mapping(config.get("imap"), "imap")
     smtp_cfg = as_mapping(config.get("smtp"), "smtp", allow_empty=True)
     filters_cfg = as_mapping(config.get("filters"), "filters", allow_empty=True)
@@ -133,7 +147,9 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(imap_cfg.get("username_keepass_entry")) or "", "username"
+            optional_string(imap_cfg.get("username_keepass_entry")) or "",
+            "username",
+            keepass_profile,
         )
     )
     imap_password = (
@@ -144,7 +160,9 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(imap_cfg.get("password_keepass_entry")) or "", "password"
+            optional_string(imap_cfg.get("password_keepass_entry")) or "",
+            "password",
+            keepass_profile,
         )
     )
     imap_timeout_seconds = parse_int(
@@ -188,7 +206,9 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(smtp_cfg.get("username_keepass_entry")) or "", "username"
+            optional_string(smtp_cfg.get("username_keepass_entry")) or "",
+            "username",
+            keepass_profile,
         )
     )
     if not smtp_username:
@@ -201,7 +221,9 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(smtp_cfg.get("password_keepass_entry")) or "", "password"
+            optional_string(smtp_cfg.get("password_keepass_entry")) or "",
+            "password",
+            keepass_profile,
         )
     )
     if not smtp_password:

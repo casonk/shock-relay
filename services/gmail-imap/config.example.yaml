@@ -2,6 +2,11 @@
 # Gmail typically requires an app password for IMAP/SMTP access.
 # Do not commit real credentials/secrets to git.
 
+# Optional: override the AUTO_PASS_PROFILE env var for KeePassXC credential
+# resolution.  Set to a profile defined in auto-pass/config/auto-pass.env.local
+# (e.g. "master", "totp").  Leave unset to use AUTO_PASS_PROFILE from env.
+# keepass_profile: master
+
 service:
   name: gmail-imap
   enabled: true
