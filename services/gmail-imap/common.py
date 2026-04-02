@@ -605,6 +605,17 @@ def mark_message_read(conn: Any, uid: int) -> None:
     conn.uid("store", str(uid), "+FLAGS", r"(\Seen)")
 
 
+def label_message(conn: Any, uid: int, label: str) -> None:
+    """Apply a Gmail label to *uid* without removing it from its current folder.
+
+    In Gmail IMAP, labels are virtual folders; copying a message to a label
+    folder applies that label while leaving the message in its original location.
+    The label is created automatically if it does not already exist.
+    """
+    conn.create(label)
+    conn.uid("copy", str(uid), label)
+
+
 def move_message(conn: Any, uid: int, dest_mailbox: str) -> None:
     """Copy *uid* to *dest_mailbox* then mark the original for deletion.
 
