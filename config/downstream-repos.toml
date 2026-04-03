@@ -1,0 +1,13 @@
+# Known downstream repositories for shock-relay.
+# Paths are relative to the portfolio root.
+# Track explicit code/config integrations here, not generic shared-utility
+# mentions from AGENTS.md alone.
+
+[utility_repo]
+path = "./util-repos/shock-relay"
+
+[downstream_repos]
+tracking_basis = "explicit code/config integrations"
+paths = [
+  "./util-repos/intake",  # settings.toml.example + intake/{cli,email,notify}.py
+]
