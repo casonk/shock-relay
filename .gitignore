@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # shock-relay service local configs (do not commit secrets or environment-specific settings)
+config/auto-pass.ini
 services/*/config.local.yaml
 services/*/config.local.yml
 services/*/config.local.json
@@ -214,3 +215,5 @@ services/*/config.local.json
 # Local agent handoff log
 CHATHISTORY.md
 .codex
+
+CLAUDE.md

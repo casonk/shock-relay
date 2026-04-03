@@ -1,6 +1,10 @@
 # Template configuration for the `twilio` backend.
 # Do not commit real credentials/secrets to git.
 
+# Optional: override the AUTO_PASS_PROFILE env var for KeePassXC credential
+# resolution. Leave unset to use config/auto-pass.ini, then the infra default.
+# keepass_profile: infra
+
 service:
   name: twilio
   enabled: true
@@ -20,8 +24,9 @@ twilio:
   auth_token_env: TWILIO_AUTH_TOKEN
 
   # Option B: KeePassXC entry paths (resolved via auto-pass sibling repo).
-  # account_sid_keepass_entry: Twilio/Twilio#API-Main  (reads UserName field)
-  # auth_token_keepass_entry: Twilio/Twilio#Token      (reads Password field)
+  # Leave these unset to use config/auto-pass.ini.
+  # account_sid_keepass_entry: twilio/example-account#sid    (reads UserName field)
+  # auth_token_keepass_entry: twilio/example-account#token   (reads Password field)
 
   # Option C: direct values (not recommended; prefer env or keepass).
   account_sid:
@@ -29,7 +34,8 @@ twilio:
 
   # Sender phone number — same three-option resolution applies.
   from_phone_env: TWILIO_FROM_PHONE
-  # from_phone_keepass_entry: Twilio/Twilio             (reads UserName field)
+  # Leave this unset to use config/auto-pass.ini.
+  # from_phone_keepass_entry: twilio/example-account#sender  (reads UserName field)
   from_phone:
 
   # Base URL for Twilio REST API. HTTPS required.

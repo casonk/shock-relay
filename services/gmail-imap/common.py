@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import configparser
 import imaplib
 import os
 import re
@@ -73,6 +74,16 @@ class GmailImapConfig:
     filters: InboxFilters
 
 
+ENTRY_NOT_FOUND_MARKERS = (
+    "not found",
+    "no entry",
+    "could not find",
+)
+DEFAULT_KEEPASS_PROFILE = "infra"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_AUTO_PASS_CONFIG_PATH = _REPO_ROOT / "config" / "auto-pass.ini"
+
+
 def default_config_path() -> str:
     return os.environ.get(
         "GMAIL_IMAP_LOCAL_CONFIG",
@@ -80,7 +91,48 @@ def default_config_path() -> str:
     )
 
 
-def _resolve_keepass_value(entry: str, field: str, profile: str = "") -> str:
+def _load_repo_auto_pass_config() -> dict[str, str]:
+    if not _AUTO_PASS_CONFIG_PATH.is_file():
+        return {}
+
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.optionxform = str
+    try:
+        with _AUTO_PASS_CONFIG_PATH.open(encoding="utf-8") as handle:
+            parser.read_file(handle)
+    except (OSError, configparser.Error) as exc:
+        raise ConfigError(
+            f"ERROR: Cannot read auto-pass config file: {_AUTO_PASS_CONFIG_PATH} ({exc})"
+        ) from exc
+
+    defaults: dict[str, str] = {}
+    if parser.has_section("auto_pass"):
+        profile = parser.get("auto_pass", "profile", fallback="").strip()
+        if profile:
+            defaults["profile"] = profile
+    if parser.has_section("gmail_imap"):
+        for key, value in parser.items("gmail_imap"):
+            text = value.strip()
+            if text:
+                defaults[key] = text
+    return defaults
+
+
+def _candidate_keepass_entries(entry: str) -> tuple[str, ...]:
+    normalized = entry.strip()
+    if not normalized:
+        return ()
+    candidates = [normalized]
+    if "/" not in normalized:
+        candidates.append(f"email/{normalized}")
+    return tuple(dict.fromkeys(candidates))
+
+
+def _resolve_keepass_value(
+    entry: str,
+    field: str,
+    profile: str = DEFAULT_KEEPASS_PROFILE,
+) -> str:
     """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo.
 
     *profile* overrides the ``AUTO_PASS_PROFILE`` env var set by the env file,
@@ -88,25 +140,33 @@ def _resolve_keepass_value(entry: str, field: str, profile: str = "") -> str:
     """
     if not entry:
         return ""
-    import os as _os
     import sys as _sys
 
     _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
     _src = str(_ap_root / "src")
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
-    from auto_pass.envfile import apply_keepass_profile_environment  # noqa: PLC0415
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
+    from auto_pass.keepassxc import KeepassCommandError  # noqa: PLC0415
     from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
 
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
-        load_config_environment(_ap_env)
-    if profile:
-        _os.environ["AUTO_PASS_PROFILE"] = profile
-        apply_keepass_profile_environment(override=True)
-    result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
-    return result.get("value", "")
+        load_config_environment(_ap_env, profile=profile or None)
+    last_error: KeepassCommandError | None = None
+    for candidate in _candidate_keepass_entries(entry):
+        try:
+            result = resolve_keepassxc_entry(candidate, attrs_map={"value": field})
+        except KeepassCommandError as exc:
+            last_error = exc
+            lowered = str(exc).lower()
+            if any(marker in lowered for marker in ENTRY_NOT_FOUND_MARKERS):
+                continue
+            raise
+        return result.get("value", "")
+    if last_error is not None:
+        raise last_error
+    return ""
 
 
 def load_config(config_path: str) -> GmailImapConfig:
@@ -118,14 +178,26 @@ def load_config(config_path: str) -> GmailImapConfig:
         ) from exc
 
     config = parse_simple_yaml(config_text)
+    repo_auto_pass = _load_repo_auto_pass_config()
     # Optional profile override — same pattern as intake's auto_pass_profile setting.
-    # Set keepass_profile in config.local.yaml to select which KeePassXC profile to use
-    # (e.g. "master") when the AUTO_PASS_PROFILE env var points to a profile that has
-    # no matching database credentials.
-    keepass_profile = optional_string(config.get("keepass_profile"))
+    # Set keepass_profile in config.local.yaml to select which KeePassXC profile to use.
+    # When unset, the repo-level config/auto-pass.ini value is used, then the infra default.
+    keepass_profile = (
+        optional_string(config.get("keepass_profile"))
+        or repo_auto_pass.get("profile")
+        or DEFAULT_KEEPASS_PROFILE
+    )
     imap_cfg = as_mapping(config.get("imap"), "imap")
     smtp_cfg = as_mapping(config.get("smtp"), "smtp", allow_empty=True)
     filters_cfg = as_mapping(config.get("filters"), "filters", allow_empty=True)
+    imap_username_keepass_entry = (
+        optional_string(imap_cfg.get("username_keepass_entry"))
+        or repo_auto_pass.get("username_keepass_entry", "")
+    )
+    imap_password_keepass_entry = (
+        optional_string(imap_cfg.get("password_keepass_entry"))
+        or repo_auto_pass.get("password_keepass_entry", "")
+    )
 
     imap_tls_cfg = as_mapping(imap_cfg.get("tls"), "imap.tls", allow_empty=True)
     smtp_tls_cfg = as_mapping(smtp_cfg.get("tls"), "smtp.tls", allow_empty=True)
@@ -147,7 +219,7 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(imap_cfg.get("username_keepass_entry")) or "",
+            imap_username_keepass_entry,
             "username",
             keepass_profile,
         )
@@ -160,7 +232,7 @@ def load_config(config_path: str) -> GmailImapConfig:
             required=False,
         )
         or _resolve_keepass_value(
-            optional_string(imap_cfg.get("password_keepass_entry")) or "",
+            imap_password_keepass_entry,
             "password",
             keepass_profile,
         )

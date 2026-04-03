@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import configparser
 import base64
 import json
 import os
@@ -41,6 +42,16 @@ class TwilioConfig:
     ca_cert_path: str
 
 
+ENTRY_NOT_FOUND_MARKERS = (
+    "not found",
+    "no entry",
+    "could not find",
+)
+DEFAULT_KEEPASS_PROFILE = "infra"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_AUTO_PASS_CONFIG_PATH = _REPO_ROOT / "config" / "auto-pass.ini"
+
+
 def default_config_path() -> str:
     return os.environ.get(
         "TWILIO_LOCAL_CONFIG",
@@ -48,22 +59,78 @@ def default_config_path() -> str:
     )
 
 
-def _resolve_keepass_value(entry: str, field: str) -> str:
+def _load_repo_auto_pass_config() -> dict[str, str]:
+    if not _AUTO_PASS_CONFIG_PATH.is_file():
+        return {}
+
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.optionxform = str
+    try:
+        with _AUTO_PASS_CONFIG_PATH.open(encoding="utf-8") as handle:
+            parser.read_file(handle)
+    except (OSError, configparser.Error) as exc:
+        raise ConfigError(
+            f"ERROR: Cannot read auto-pass config file: {_AUTO_PASS_CONFIG_PATH} ({exc})"
+        ) from exc
+
+    defaults: dict[str, str] = {}
+    if parser.has_section("auto_pass"):
+        profile = parser.get("auto_pass", "profile", fallback="").strip()
+        if profile:
+            defaults["profile"] = profile
+    if parser.has_section("twilio"):
+        for key, value in parser.items("twilio"):
+            text = value.strip()
+            if text:
+                defaults[key] = text
+    return defaults
+
+
+def _candidate_keepass_entries(entry: str) -> tuple[str, ...]:
+    normalized = entry.strip()
+    if not normalized:
+        return ()
+    candidates = [normalized]
+    if normalized.startswith("Twilio/"):
+        candidates.append(f"twilio/{normalized.split('/', 1)[1]}")
+    return tuple(dict.fromkeys(candidates))
+
+
+def _resolve_keepass_value(
+    entry: str,
+    field: str,
+    profile: str = DEFAULT_KEEPASS_PROFILE,
+) -> str:
     """Resolve a single field from a KeePassXC entry via the auto-pass sibling repo."""
     if not entry:
         return ""
     import sys as _sys
+
     _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
     _src = str(_ap_root / "src")
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
+    from auto_pass.keepassxc import KeepassCommandError  # noqa: PLC0415
     from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
-        load_config_environment(_ap_env)
-    result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
-    return result.get("value", "")
+        load_config_environment(_ap_env, profile=profile or None)
+    last_error: KeepassCommandError | None = None
+    for candidate in _candidate_keepass_entries(entry):
+        try:
+            result = resolve_keepassxc_entry(candidate, attrs_map={"value": field})
+        except KeepassCommandError as exc:
+            last_error = exc
+            lowered = str(exc).lower()
+            if any(marker in lowered for marker in ENTRY_NOT_FOUND_MARKERS):
+                continue
+            raise
+        return result.get("value", "")
+    if last_error is not None:
+        raise last_error
+    return ""
 
 
 def load_config(config_path: str) -> TwilioConfig:
@@ -73,9 +140,27 @@ def load_config(config_path: str) -> TwilioConfig:
         raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
 
     config = parse_simple_yaml(config_text)
+    repo_auto_pass = _load_repo_auto_pass_config()
+    keepass_profile = (
+        optional_string(config.get("keepass_profile"))
+        or repo_auto_pass.get("profile")
+        or DEFAULT_KEEPASS_PROFILE
+    )
     twilio_cfg = as_mapping(config.get("twilio"), "twilio")
     sms_cfg = as_mapping(twilio_cfg.get("sms"), "twilio.sms", allow_empty=True)
     tls_cfg = as_mapping(twilio_cfg.get("tls"), "twilio.tls", allow_empty=True)
+    account_sid_keepass_entry = (
+        optional_string(twilio_cfg.get("account_sid_keepass_entry"))
+        or repo_auto_pass.get("account_sid_keepass_entry", "")
+    )
+    auth_token_keepass_entry = (
+        optional_string(twilio_cfg.get("auth_token_keepass_entry"))
+        or repo_auto_pass.get("auth_token_keepass_entry", "")
+    )
+    from_phone_keepass_entry = (
+        optional_string(twilio_cfg.get("from_phone_keepass_entry"))
+        or repo_auto_pass.get("from_phone_keepass_entry", "")
+    )
 
     api_base_url = optional_string(twilio_cfg.get("api_base_url")) or "https://api.twilio.com"
     if not api_base_url.lower().startswith("https://"):
@@ -84,17 +169,29 @@ def load_config(config_path: str) -> TwilioConfig:
     account_sid = (
         optional_string(twilio_cfg.get("account_sid"))
         or resolve_env_value(optional_string(twilio_cfg.get("account_sid_env")), field_name="twilio.account_sid_env", required=False)
-        or _resolve_keepass_value(optional_string(twilio_cfg.get("account_sid_keepass_entry")) or "", "username")
+        or _resolve_keepass_value(
+            account_sid_keepass_entry,
+            "username",
+            keepass_profile,
+        )
     )
     auth_token = (
         optional_string(twilio_cfg.get("auth_token"))
         or resolve_env_value(optional_string(twilio_cfg.get("auth_token_env")), field_name="twilio.auth_token_env", required=False)
-        or _resolve_keepass_value(optional_string(twilio_cfg.get("auth_token_keepass_entry")) or "", "password")
+        or _resolve_keepass_value(
+            auth_token_keepass_entry,
+            "password",
+            keepass_profile,
+        )
     )
     from_phone = (
         optional_string(twilio_cfg.get("from_phone"))
         or resolve_env_value(optional_string(twilio_cfg.get("from_phone_env")), field_name="twilio.from_phone_env", required=False)
-        or _resolve_keepass_value(optional_string(twilio_cfg.get("from_phone_keepass_entry")) or "", "username")
+        or _resolve_keepass_value(
+            from_phone_keepass_entry,
+            "username",
+            keepass_profile,
+        )
     )
 
     if not account_sid:
