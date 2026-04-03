@@ -5,22 +5,22 @@ skinparam shadowing false
 skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
-rectangle ".github/workflows/ci.yml\\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
-rectangle "services/signal-cli/receive_messages.sh\\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
-rectangle "services/signal-cli/send_message.sh\\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
-rectangle "services/signal-cli/test_send_receive_confirm.sh\\n6 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
-rectangle "services/telegram/common.sh\\n43 detected tools" as source_services_telegram_common_sh #E0F2FE
-rectangle "services/telegram/receive_messages.sh\\n3 detected tools" as source_services_telegram_receive_messages_sh #E0F2FE
-rectangle "services/telegram/send_message.sh\\n2 detected tools" as source_services_telegram_send_message_sh #E0F2FE
-rectangle "services/telegram/test_send_receive_confirm.sh\\n6 detected tools" as source_services_telegram_test_send_receive_confirm_sh #E0F2FE
-rectangle "services/twilio/common.sh\\n41 detected tools" as source_services_twilio_common_sh #E0F2FE
-rectangle "services/twilio/receive_messages.sh\\n3 detected tools" as source_services_twilio_receive_messages_sh #E0F2FE
-rectangle "services/twilio/send_sms.sh\\n2 detected tools" as source_services_twilio_send_sms_sh #E0F2FE
-rectangle "services/twilio/test_send_receive_confirm.sh\\n6 detected tools" as source_services_twilio_test_send_receive_confirm_sh #E0F2FE
-rectangle "services/whatsapp/common.sh\\n48 detected tools" as source_services_whatsapp_common_sh #E0F2FE
-rectangle "services/whatsapp/receive_messages.sh\\n3 detected tools" as source_services_whatsapp_receive_messages_sh #E0F2FE
-rectangle "services/whatsapp/send_message.sh\\n2 detected tools" as source_services_whatsapp_send_message_sh #E0F2FE
-rectangle "services/whatsapp/test_send_receive_confirm.sh\\n6 detected tools" as source_services_whatsapp_test_send_receive_confirm_sh #E0F2FE
+rectangle ".github/workflows/ci.yml\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
+rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
+rectangle "services/signal-cli/send_message.sh\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
+rectangle "services/signal-cli/test_send_receive_confirm.sh\n6 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/telegram/common.sh\n43 detected tools" as source_services_telegram_common_sh #E0F2FE
+rectangle "services/telegram/receive_messages.sh\n3 detected tools" as source_services_telegram_receive_messages_sh #E0F2FE
+rectangle "services/telegram/send_message.sh\n2 detected tools" as source_services_telegram_send_message_sh #E0F2FE
+rectangle "services/telegram/test_send_receive_confirm.sh\n6 detected tools" as source_services_telegram_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/twilio/common.sh\n41 detected tools" as source_services_twilio_common_sh #E0F2FE
+rectangle "services/twilio/receive_messages.sh\n3 detected tools" as source_services_twilio_receive_messages_sh #E0F2FE
+rectangle "services/twilio/send_sms.sh\n2 detected tools" as source_services_twilio_send_sms_sh #E0F2FE
+rectangle "services/twilio/test_send_receive_confirm.sh\n6 detected tools" as source_services_twilio_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/whatsapp/common.sh\n48 detected tools" as source_services_whatsapp_common_sh #E0F2FE
+rectangle "services/whatsapp/receive_messages.sh\n3 detected tools" as source_services_whatsapp_receive_messages_sh #E0F2FE
+rectangle "services/whatsapp/send_message.sh\n2 detected tools" as source_services_whatsapp_send_message_sh #E0F2FE
+rectangle "services/whatsapp/test_send_receive_confirm.sh\n6 detected tools" as source_services_whatsapp_test_send_receive_confirm_sh #E0F2FE
 cloud "!in_single" as tool_in_single #FEF3C7
 cloud "((.raw" as tool_raw #FEF3C7
 cloud "(if" as tool_if #FEF3C7
