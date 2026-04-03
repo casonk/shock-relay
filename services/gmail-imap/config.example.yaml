@@ -3,9 +3,9 @@
 # Do not commit real credentials/secrets to git.
 
 # Optional: override the AUTO_PASS_PROFILE env var for KeePassXC credential
-# resolution.  Set to a profile defined in auto-pass/config/auto-pass.env.local
-# (e.g. "master", "totp").  Leave unset to use AUTO_PASS_PROFILE from env.
-# keepass_profile: master
+# resolution. Set to a profile defined in auto-pass/config/auto-pass.env.local.
+# Leave unset to use config/auto-pass.ini, then the infra default.
+# keepass_profile: infra
 
 service:
   name: gmail-imap
@@ -32,8 +32,9 @@ imap:
   # Option B: KeePassXC entry path (auto-pass sibling repo).
   # username_keepass_entry resolves the UserName field of the entry.
   # password_keepass_entry resolves the Password field of the entry.
-  # username_keepass_entry: CHOOSE_KEEPASS_ENTRY_PATH
-  # password_keepass_entry: CHOOSE_KEEPASS_ENTRY_PATH
+  # Leave these unset to use config/auto-pass.ini.
+  # username_keepass_entry: email/example-account#imap
+  # password_keepass_entry: email/example-account#imap
 
   # Option C: direct values (not recommended).
   username:
