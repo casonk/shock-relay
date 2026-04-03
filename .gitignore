@@ -213,3 +213,4 @@ services/*/config.local.json
 
 # Local agent handoff log
 CHATHISTORY.md
+.codex
