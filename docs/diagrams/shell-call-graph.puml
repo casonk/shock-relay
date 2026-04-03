@@ -5,21 +5,21 @@ skinparam shadowing false
 skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
-rectangle "services/signal-cli/receive_messages.sh\\n0 local shell edges\\n2 external tools" as shell_services_signal_cli_receive_messages_sh #DBEAFE
-rectangle "services/signal-cli/send_message.sh\\n0 local shell edges\\n2 external tools" as shell_services_signal_cli_send_message_sh #DBEAFE
-rectangle "services/signal-cli/test_send_receive_confirm.sh\\n0 local shell edges\\n6 external tools" as shell_services_signal_cli_test_send_receive_confirm_sh #DBEAFE
-rectangle "services/telegram/common.sh\\n0 local shell edges\\n43 external tools" as shell_services_telegram_common_sh #DBEAFE
-rectangle "services/telegram/receive_messages.sh\\n0 local shell edges\\n3 external tools" as shell_services_telegram_receive_messages_sh #DBEAFE
-rectangle "services/telegram/send_message.sh\\n0 local shell edges\\n2 external tools" as shell_services_telegram_send_message_sh #DBEAFE
-rectangle "services/telegram/test_send_receive_confirm.sh\\n0 local shell edges\\n6 external tools" as shell_services_telegram_test_send_receive_confirm_sh #DBEAFE
-rectangle "services/twilio/common.sh\\n0 local shell edges\\n41 external tools" as shell_services_twilio_common_sh #DBEAFE
-rectangle "services/twilio/receive_messages.sh\\n0 local shell edges\\n3 external tools" as shell_services_twilio_receive_messages_sh #DBEAFE
-rectangle "services/twilio/send_sms.sh\\n0 local shell edges\\n2 external tools" as shell_services_twilio_send_sms_sh #DBEAFE
-rectangle "services/twilio/test_send_receive_confirm.sh\\n0 local shell edges\\n6 external tools" as shell_services_twilio_test_send_receive_confirm_sh #DBEAFE
-rectangle "services/whatsapp/common.sh\\n0 local shell edges\\n48 external tools" as shell_services_whatsapp_common_sh #DBEAFE
-rectangle "services/whatsapp/receive_messages.sh\\n0 local shell edges\\n3 external tools" as shell_services_whatsapp_receive_messages_sh #DBEAFE
-rectangle "services/whatsapp/send_message.sh\\n0 local shell edges\\n2 external tools" as shell_services_whatsapp_send_message_sh #DBEAFE
-rectangle "services/whatsapp/test_send_receive_confirm.sh\\n0 local shell edges\\n6 external tools" as shell_services_whatsapp_test_send_receive_confirm_sh #DBEAFE
+rectangle "services/signal-cli/receive_messages.sh\n0 local shell edges\n2 external tools" as shell_services_signal_cli_receive_messages_sh #DBEAFE
+rectangle "services/signal-cli/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_signal_cli_send_message_sh #DBEAFE
+rectangle "services/signal-cli/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_signal_cli_test_send_receive_confirm_sh #DBEAFE
+rectangle "services/telegram/common.sh\n0 local shell edges\n43 external tools" as shell_services_telegram_common_sh #DBEAFE
+rectangle "services/telegram/receive_messages.sh\n0 local shell edges\n3 external tools" as shell_services_telegram_receive_messages_sh #DBEAFE
+rectangle "services/telegram/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_telegram_send_message_sh #DBEAFE
+rectangle "services/telegram/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_telegram_test_send_receive_confirm_sh #DBEAFE
+rectangle "services/twilio/common.sh\n0 local shell edges\n41 external tools" as shell_services_twilio_common_sh #DBEAFE
+rectangle "services/twilio/receive_messages.sh\n0 local shell edges\n3 external tools" as shell_services_twilio_receive_messages_sh #DBEAFE
+rectangle "services/twilio/send_sms.sh\n0 local shell edges\n2 external tools" as shell_services_twilio_send_sms_sh #DBEAFE
+rectangle "services/twilio/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_twilio_test_send_receive_confirm_sh #DBEAFE
+rectangle "services/whatsapp/common.sh\n0 local shell edges\n48 external tools" as shell_services_whatsapp_common_sh #DBEAFE
+rectangle "services/whatsapp/receive_messages.sh\n0 local shell edges\n3 external tools" as shell_services_whatsapp_receive_messages_sh #DBEAFE
+rectangle "services/whatsapp/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_whatsapp_send_message_sh #DBEAFE
+rectangle "services/whatsapp/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_whatsapp_test_send_receive_confirm_sh #DBEAFE
 cloud "!in_single" as tool_in_single #FEF3C7
 cloud "((.raw" as tool_raw #FEF3C7
 cloud "(if" as tool_if #FEF3C7
