@@ -1,0 +1,12 @@
+[repo]
+name = "shock-relay"
+category = "util-repos"
+kind = "python-shell"
+
+[paths]
+disk_path = "."
+profile_path = ".tachometer/profile.json"
+summary_path = ".tachometer/summary.json"
+
+[defaults]
+label = "repo-snapshot"
