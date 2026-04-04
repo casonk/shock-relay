@@ -9,5 +9,6 @@ path = "./util-repos/shock-relay"
 [downstream_repos]
 tracking_basis = "explicit code/config integrations"
 paths = [
-  "./util-repos/intake",  # settings.toml.example + intake/{cli,email,notify}.py
+  "./util-repos/intake",    # settings.toml.example + intake/{cli,email,notify}.py
+  "./util-repos/crew-chief", # listener.py calls signal-cli scripts + gmail check_inbox/send_email
 ]
