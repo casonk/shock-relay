@@ -425,6 +425,17 @@ When implementing new services:
 
 For issues, questions, or contributions, please open an issue on the project repository.
 
+## Local CI Verification
+
+Run before every push:
+
+```bash
+pre-commit run --all-files
+python -m compileall services
+```
+
+Do not push changes that have not passed all checks locally.
+
 ## Portfolio Standards Reference
 
 For portfolio-wide repository standards and baseline conventions, consult the control-plane repo at `./util-repos/traction-control` from the portfolio root.
