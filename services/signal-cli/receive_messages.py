@@ -12,7 +12,9 @@ def extract_account_and_bus_name(config_path: str) -> Tuple[str, Optional[str]]:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as e:
-        raise RuntimeError(f"ERROR: Cannot read config file: {config_path} ({e})") from e
+        raise RuntimeError(
+            f"ERROR: Cannot read config file: {config_path} ({e})"
+        ) from e
 
     lines = config_text.splitlines()
     account = ""
@@ -23,7 +25,9 @@ def extract_account_and_bus_name(config_path: str) -> Tuple[str, Optional[str]]:
 
     def val_from_line(line: str) -> str:
         # Supports: key: "value", key: 'value', key: value
-        m = re.match(r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line)
+        m = re.match(
+            r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line
+        )
         if not m:
             return ""
         return next(v for v in m.groups() if v is not None)
@@ -37,7 +41,11 @@ def extract_account_and_bus_name(config_path: str) -> Tuple[str, Optional[str]]:
 
         if line.strip() != "":
             indent = len(line) - len(line.lstrip())
-            if base_indent is not None and indent <= base_indent and not re.match(r"^\s*signal_cli:\s*$", line):
+            if (
+                base_indent is not None
+                and indent <= base_indent
+                and not re.match(r"^\s*signal_cli:\s*$", line)
+            ):
                 break
 
         if re.match(r"^\s*account:\s*", line):
@@ -114,4 +122,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

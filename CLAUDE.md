@@ -125,11 +125,11 @@ total = 1000
 for i in range(0, total, 100):
     # Process batch
     process_batch(i, i+100)
-    
+
     # Send update every 10%
     progress = (i / total) * 100
     send_status(f"Progress: {progress:.0f}% complete")
-    
+
 send_status("✅ Processing complete!")
 ```
 
@@ -204,16 +204,16 @@ class ShockRelay:
         self.service = service
         self.recipient = recipient
         self.base_path = Path(__file__).parent / "services" / service
-    
+
     def send(self, message: str, recipient: str = None):
         """Send a message via configured service"""
         recipient = recipient or self.recipient
         if not recipient:
             raise ValueError("No recipient specified")
-        
+
         script = self.base_path / "send_message.py"
         subprocess.run([str(script), recipient, message], check=True)
-    
+
     def receive(self, timeout: int = 30):
         """Receive messages from configured service"""
         script = self.base_path / "receive_messages.py"
@@ -245,7 +245,7 @@ def send_with_retry(recipient: str, message: str, max_retries: int = 3):
             capture_output=True,
             text=True
         )
-        
+
         if result.returncode == 0:
             return True
         elif result.returncode == 2:
@@ -254,7 +254,7 @@ def send_with_retry(recipient: str, message: str, max_retries: int = 3):
         else:
             print(f"Attempt {attempt + 1} failed, retrying...")
             time.sleep(2 ** attempt)  # Exponential backoff
-    
+
     return False
 ```
 
@@ -322,21 +322,21 @@ def split_message(text: str, max_length: int = 1000) -> List[str]:
     """Split long messages into chunks"""
     if len(text) <= max_length:
         return [text]
-    
+
     chunks = []
     while text:
         if len(text) <= max_length:
             chunks.append(text)
             break
-        
+
         # Find last space before max_length
         split_at = text.rfind(' ', 0, max_length)
         if split_at == -1:
             split_at = max_length
-        
+
         chunks.append(text[:split_at])
         text = text[split_at:].lstrip()
-    
+
     return chunks
 
 # Send in parts
@@ -471,7 +471,7 @@ class NotificationQueue:
         self.thread = threading.Thread(target=self._worker)
         self.thread.daemon = True
         self.thread.start()
-    
+
     def _worker(self):
         while True:
             message = self.queue.get()
@@ -483,7 +483,7 @@ class NotificationQueue:
                 message
             ])
             self.queue.task_done()
-    
+
     def send(self, message: str):
         self.queue.put(message)
 

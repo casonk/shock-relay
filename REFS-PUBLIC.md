@@ -1,4 +1,4 @@
-# REFS-PUBLIC.md — Public References
+# REFS-PUBLIC.md - Public References
 
 > Record external public repositories, datasets, documentation, APIs, or other
 > public resources that this repository utilizes or depends on.
@@ -6,22 +6,18 @@
 
 ## Public Repositories
 
-<!-- External repos this project depends on, forks, or integrates with:
-- https://github.com/org/repo — description of usage
--->
+- https://github.com/AsamK/signal-cli - Signal provider backend used by the Signal service scripts
 
 ## Public Datasets and APIs
 
-<!-- Publicly accessible data sources, REST APIs, or external feeds consumed here:
-- https://example.com/dataset — description of usage
--->
+- https://core.telegram.org/bots/api - Telegram Bot API reference
+- https://www.twilio.com/docs/messaging - Twilio SMS API and messaging documentation
+- https://developers.google.com/gmail/imap/imap-smtp - Gmail IMAP/SMTP reference
 
 ## Documentation and Specifications
 
-<!-- Reference docs, RFCs, standards, or upstream project documentation:
-- https://docs.example.com — description
--->
+- https://www.twilio.com/docs/whatsapp - Twilio WhatsApp documentation when the WhatsApp provider is backed by Twilio-compatible messaging
 
 ## Notes
 
-<!-- Any context about how these public references are used or versioned -->
+- The WhatsApp lane can target a generic HTTPS gateway, so provider-specific public docs belong here only when that gateway becomes a fixed dependency.

@@ -87,7 +87,9 @@ def main() -> int:
         return 2
 
     reg_token = f"{int(time.time())}-{uuid.uuid4().hex[:6]}"
-    test_payload = os.environ.get("MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test")
+    test_payload = os.environ.get(
+        "MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test"
+    )
     test_message = "\n".join(
         [
             "shock-relay TEST",
@@ -116,7 +118,9 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    seen_messages = {message_fingerprint(item) for item in baseline_payload.get("messages", [])}
+    seen_messages = {
+        message_fingerprint(item) for item in baseline_payload.get("messages", [])
+    }
     start = time.monotonic()
     response_message = None
 

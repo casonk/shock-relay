@@ -3,11 +3,19 @@ import argparse
 import json
 import sys
 
-from common import ConfigError, GatewayError, default_config_path, get_updates, load_config
+from common import (
+    ConfigError,
+    GatewayError,
+    default_config_path,
+    get_updates,
+    load_config,
+)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Receive Telegram updates via the Bot API.")
+    parser = argparse.ArgumentParser(
+        description="Receive Telegram updates via the Bot API."
+    )
     parser.add_argument(
         "--config",
         default=default_config_path(),
@@ -33,7 +41,11 @@ def main() -> int:
         default=None,
         help="Telegram getUpdates offset.",
     )
-    parser.add_argument("--pretty", action="store_true", help="Pretty-print the normalized JSON response.")
+    parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print the normalized JSON response.",
+    )
     args = parser.parse_args()
 
     try:

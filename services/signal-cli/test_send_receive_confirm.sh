@@ -168,4 +168,3 @@ echo "Sending CONFIRMATION back to self..."
 signal-cli "${signal_args[@]}" send --note-to-self -m "$CONFIRMATION_MESSAGE"
 
 echo "Done."
-

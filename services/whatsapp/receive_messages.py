@@ -3,11 +3,19 @@ import argparse
 import json
 import sys
 
-from common import ConfigError, GatewayError, default_config_path, load_config, receive_messages
+from common import (
+    ConfigError,
+    GatewayError,
+    default_config_path,
+    load_config,
+    receive_messages,
+)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Receive WhatsApp messages via a configured HTTPS gateway.")
+    parser = argparse.ArgumentParser(
+        description="Receive WhatsApp messages via a configured HTTPS gateway."
+    )
     parser.add_argument(
         "--config",
         default=default_config_path(),
@@ -27,13 +35,21 @@ def main() -> int:
         default=None,
         help="Maximum number of messages to request from the gateway.",
     )
-    parser.add_argument("--cursor", default=None, help="Gateway cursor to continue from a previous receive call.")
+    parser.add_argument(
+        "--cursor",
+        default=None,
+        help="Gateway cursor to continue from a previous receive call.",
+    )
     parser.add_argument(
         "--since",
         default=None,
         help="Opaque gateway-specific lower bound for inbound messages (for example an epoch timestamp).",
     )
-    parser.add_argument("--pretty", action="store_true", help="Pretty-print the normalized JSON response.")
+    parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print the normalized JSON response.",
+    )
     args = parser.parse_args()
 
     try:

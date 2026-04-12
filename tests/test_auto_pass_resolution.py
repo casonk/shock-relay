@@ -25,7 +25,9 @@ class ShockRelayAutoPassTests(unittest.TestCase):
             module_name="shock_relay_twilio_common_test",
         )
 
-    def test_gmail_keepass_resolution_loads_profile_and_falls_back_to_email_prefix(self) -> None:
+    def test_gmail_keepass_resolution_loads_profile_and_falls_back_to_email_prefix(
+        self,
+    ) -> None:
         recorder = AutoPassRecorder()
         recorder.add_response(
             "example-account#imap",
@@ -45,14 +47,20 @@ class ShockRelayAutoPassTests(unittest.TestCase):
 
         self.assertEqual(resolved, "imap-secret")
         self.assertEqual(recorder.load_calls[0].profile, "infra")
-        self.assertTrue(str(recorder.load_calls[0].path).endswith("auto-pass/config/auto-pass.env.local"))
+        self.assertTrue(
+            str(recorder.load_calls[0].path).endswith(
+                "auto-pass/config/auto-pass.env.local"
+            )
+        )
         self.assertEqual(
             [call.entry for call in recorder.resolve_calls],
             ["example-account#imap", "email/example-account#imap"],
         )
         self.assertEqual(recorder.resolve_calls[0].attrs_map, {"value": "password"})
 
-    def test_twilio_keepass_resolution_loads_profile_and_falls_back_to_twilio_prefix(self) -> None:
+    def test_twilio_keepass_resolution_loads_profile_and_falls_back_to_twilio_prefix(
+        self,
+    ) -> None:
         recorder = AutoPassRecorder()
         recorder.add_response(
             "Twilio/example-account#token",
@@ -72,7 +80,11 @@ class ShockRelayAutoPassTests(unittest.TestCase):
 
         self.assertEqual(resolved, "twilio-secret")
         self.assertEqual(recorder.load_calls[0].profile, "work")
-        self.assertTrue(str(recorder.load_calls[0].path).endswith("auto-pass/config/auto-pass.env.local"))
+        self.assertTrue(
+            str(recorder.load_calls[0].path).endswith(
+                "auto-pass/config/auto-pass.env.local"
+            )
+        )
         self.assertEqual(
             [call.entry for call in recorder.resolve_calls],
             ["Twilio/example-account#token", "twilio/example-account#token"],
