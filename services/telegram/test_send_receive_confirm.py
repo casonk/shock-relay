@@ -105,7 +105,9 @@ def main() -> int:
     except GatewayError:
         bot_info = {}
 
-    test_payload = os.environ.get("MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test")
+    test_payload = os.environ.get(
+        "MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test"
+    )
     test_message_lines = [
         "shock-relay TEST",
         f"reg: {reg_token}",

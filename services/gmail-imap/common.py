@@ -190,14 +190,12 @@ def load_config(config_path: str) -> GmailImapConfig:
     imap_cfg = as_mapping(config.get("imap"), "imap")
     smtp_cfg = as_mapping(config.get("smtp"), "smtp", allow_empty=True)
     filters_cfg = as_mapping(config.get("filters"), "filters", allow_empty=True)
-    imap_username_keepass_entry = (
-        optional_string(imap_cfg.get("username_keepass_entry"))
-        or repo_auto_pass.get("username_keepass_entry", "")
-    )
-    imap_password_keepass_entry = (
-        optional_string(imap_cfg.get("password_keepass_entry"))
-        or repo_auto_pass.get("password_keepass_entry", "")
-    )
+    imap_username_keepass_entry = optional_string(
+        imap_cfg.get("username_keepass_entry")
+    ) or repo_auto_pass.get("username_keepass_entry", "")
+    imap_password_keepass_entry = optional_string(
+        imap_cfg.get("password_keepass_entry")
+    ) or repo_auto_pass.get("password_keepass_entry", "")
 
     imap_tls_cfg = as_mapping(imap_cfg.get("tls"), "imap.tls", allow_empty=True)
     smtp_tls_cfg = as_mapping(smtp_cfg.get("tls"), "smtp.tls", allow_empty=True)

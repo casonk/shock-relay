@@ -50,13 +50,17 @@ def load_config(config_path: str) -> TelegramConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
+        raise ConfigError(
+            f"ERROR: Cannot read config file: {config_path} ({exc})"
+        ) from exc
 
     config = parse_simple_yaml(config_text)
     telegram_cfg = as_mapping(config.get("telegram"), "telegram")
     tls_cfg = as_mapping(telegram_cfg.get("tls"), "telegram.tls", allow_empty=True)
 
-    api_base_url = optional_string(telegram_cfg.get("api_base_url")) or "https://api.telegram.org"
+    api_base_url = (
+        optional_string(telegram_cfg.get("api_base_url")) or "https://api.telegram.org"
+    )
     if not api_base_url.lower().startswith("https://"):
         raise ConfigError("ERROR: telegram.api_base_url must use https://")
 
@@ -66,15 +70,21 @@ def load_config(config_path: str) -> TelegramConfig:
         required=False,
     )
     if not bot_token:
-        raise ConfigError("ERROR: Missing telegram.bot_token or telegram.bot_token_env in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing telegram.bot_token or telegram.bot_token_env in config.local.yaml"
+        )
 
     timeout_seconds = parse_int(
         telegram_cfg.get("timeout_seconds"),
         default=30,
         field_name="telegram.timeout_seconds",
     )
-    allowed_chat_ids = read_scalar_list(telegram_cfg.get("allowed_chat_ids"), "telegram.allowed_chat_ids")
-    allowed_updates = read_scalar_list(telegram_cfg.get("allowed_updates"), "telegram.allowed_updates") or ["message"]
+    allowed_chat_ids = read_scalar_list(
+        telegram_cfg.get("allowed_chat_ids"), "telegram.allowed_chat_ids"
+    )
+    allowed_updates = read_scalar_list(
+        telegram_cfg.get("allowed_updates"), "telegram.allowed_updates"
+    ) or ["message"]
     default_parse_mode = optional_string(telegram_cfg.get("default_parse_mode"))
 
     insecure_skip_verify = parse_bool(
@@ -88,7 +98,9 @@ def load_config(config_path: str) -> TelegramConfig:
         required=False,
     )
     if insecure_skip_verify and ca_cert_path:
-        raise ConfigError("ERROR: Configure either telegram.tls.insecure_skip_verify or a CA cert path, not both")
+        raise ConfigError(
+            "ERROR: Configure either telegram.tls.insecure_skip_verify or a CA cert path, not both"
+        )
     if ca_cert_path and not Path(ca_cert_path).is_file():
         raise ConfigError(f"ERROR: CA certificate file does not exist: {ca_cert_path}")
 
@@ -145,12 +157,16 @@ def get_updates(
     if timeout is not None:
         client_timeout = max(client_timeout, timeout + 5)
 
-    response = request_api(config, "getUpdates", payload=payload, timeout_seconds=client_timeout)
+    response = request_api(
+        config, "getUpdates", payload=payload, timeout_seconds=client_timeout
+    )
     return normalize_updates_response(get_result(response))
 
 
 def get_me(config: TelegramConfig) -> Dict[str, Any]:
-    response = request_api(config, "getMe", payload={}, timeout_seconds=config.timeout_seconds)
+    response = request_api(
+        config, "getMe", payload={}, timeout_seconds=config.timeout_seconds
+    )
     result = get_result(response)
     if not isinstance(result, dict):
         raise GatewayError("Telegram getMe response did not contain an object result")
@@ -176,7 +192,9 @@ def request_api(
     if not isinstance(body, dict):
         raise GatewayError("Telegram API response was not a JSON object")
     if body.get("ok") is not True:
-        description = optional_string(body.get("description")) or "Telegram API request failed"
+        description = (
+            optional_string(body.get("description")) or "Telegram API request failed"
+        )
         error_code = optional_string(body.get("error_code"))
         if error_code:
             raise GatewayError(f"Telegram API error {error_code}: {description}")
@@ -196,7 +214,11 @@ def normalize_updates_response(result: Any) -> Dict[str, Any]:
         raise GatewayError("Telegram getUpdates result was not a list")
 
     normalized = [normalize_update(update) for update in result]
-    update_ids = [update["update_id"] for update in normalized if isinstance(update.get("update_id"), int)]
+    update_ids = [
+        update["update_id"]
+        for update in normalized
+        if isinstance(update.get("update_id"), int)
+    ]
     next_offset = max(update_ids) + 1 if update_ids else None
     return {
         "updates": normalized,
@@ -210,16 +232,31 @@ def normalize_update(update: Any) -> Dict[str, Any]:
 
     update_type = ""
     message_payload: Dict[str, Any] = {}
-    for candidate in ("message", "edited_message", "channel_post", "edited_channel_post"):
+    for candidate in (
+        "message",
+        "edited_message",
+        "channel_post",
+        "edited_channel_post",
+    ):
         candidate_value = update.get(candidate)
         if isinstance(candidate_value, dict):
             update_type = candidate
             message_payload = candidate_value
             break
 
-    chat_payload = message_payload.get("chat") if isinstance(message_payload.get("chat"), dict) else {}
-    from_payload = message_payload.get("from") if isinstance(message_payload.get("from"), dict) else {}
-    text = optional_string(message_payload.get("text")) or optional_string(message_payload.get("caption"))
+    chat_payload = (
+        message_payload.get("chat")
+        if isinstance(message_payload.get("chat"), dict)
+        else {}
+    )
+    from_payload = (
+        message_payload.get("from")
+        if isinstance(message_payload.get("from"), dict)
+        else {}
+    )
+    text = optional_string(message_payload.get("text")) or optional_string(
+        message_payload.get("caption")
+    )
 
     return {
         "update_id": update.get("update_id"),
@@ -227,7 +264,9 @@ def normalize_update(update: Any) -> Dict[str, Any]:
         "message_id": message_payload.get("message_id"),
         "chat_id": chat_payload.get("id"),
         "chat_type": chat_payload.get("type"),
-        "chat_title": first_non_empty(chat_payload, ["title", "username", "first_name"]),
+        "chat_title": first_non_empty(
+            chat_payload, ["title", "username", "first_name"]
+        ),
         "from_id": from_payload.get("id"),
         "from_username": from_payload.get("username"),
         "from_first_name": from_payload.get("first_name"),
@@ -252,7 +291,9 @@ def validate_chat_id(config: TelegramConfig, chat_id: str) -> None:
     if any(chat_matches(chat_id, allowed) for allowed in config.allowed_chat_ids):
         return
 
-    raise ConfigError(f"ERROR: Chat ID is not allowed by telegram.allowed_chat_ids: {chat_id}")
+    raise ConfigError(
+        f"ERROR: Chat ID is not allowed by telegram.allowed_chat_ids: {chat_id}"
+    )
 
 
 def chat_matches(actual: Any, expected: Any) -> bool:
@@ -286,11 +327,17 @@ def request_json(
 ) -> HttpResponse:
     request_headers = {"Content-Type": "application/json"}
     data = json.dumps(payload or {}).encode("utf-8")
-    request = urllib.request.Request(url=url, data=data, headers=request_headers, method=method)
-    ssl_context = build_ssl_context(insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path)
+    request = urllib.request.Request(
+        url=url, data=data, headers=request_headers, method=method
+    )
+    ssl_context = build_ssl_context(
+        insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path
+    )
 
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            request, timeout=timeout_seconds, context=ssl_context
+        ) as response:
             text = response.read().decode(
                 response.headers.get_content_charset() or "utf-8",
                 errors="replace",
@@ -308,7 +355,9 @@ def request_json(
         raise GatewayError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
+def build_ssl_context(
+    insecure_skip_verify: bool, ca_cert_path: str
+) -> Optional[ssl.SSLContext]:
     if insecure_skip_verify:
         return ssl._create_unverified_context()
     if ca_cert_path:
@@ -343,7 +392,9 @@ def read_scalar_list(value: Any, field_name: str) -> List[str]:
     for item in value:
         item_str = optional_string(item)
         if not item_str:
-            raise ConfigError(f"ERROR: {field_name} must contain only non-empty scalars")
+            raise ConfigError(
+                f"ERROR: {field_name} must contain only non-empty scalars"
+            )
         result.append(item_str)
     return result
 
@@ -381,18 +432,24 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(
+    env_name: Optional[str], field_name: str, required: bool = True
+) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
     if value:
         return value
     if required:
-        raise ConfigError(f"ERROR: Environment variable {env_name} referenced by {field_name} is not set")
+        raise ConfigError(
+            f"ERROR: Environment variable {env_name} referenced by {field_name} is not set"
+        )
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(
+    value: Any, field_name: str, allow_empty: bool = False
+) -> Dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -422,7 +479,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
 
         if stripped.startswith("- "):
             if not isinstance(parent, list):
-                raise ConfigError(f"ERROR: Unexpected YAML list item near line {index + 1}")
+                raise ConfigError(
+                    f"ERROR: Unexpected YAML list item near line {index + 1}"
+                )
             parent.append(parse_scalar(stripped[2:].strip()))
             continue
 
@@ -453,7 +512,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(
+    lines: List[str], start_index: int, current_indent: int
+) -> Optional[type]:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():
@@ -492,7 +553,11 @@ def parse_scalar(value_text: str) -> Any:
         return {}
     if re.fullmatch(r"-?\d+", value_text):
         return int(value_text)
-    if len(value_text) >= 2 and value_text[0] == value_text[-1] and value_text[0] in ("'", '"'):
+    if (
+        len(value_text) >= 2
+        and value_text[0] == value_text[-1]
+        and value_text[0] in ("'", '"')
+    ):
         if value_text[0] == "'":
             return value_text[1:-1].replace("''", "'")
         return bytes(value_text[1:-1], "utf-8").decode("unicode_escape")

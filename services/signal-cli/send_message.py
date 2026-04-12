@@ -7,13 +7,21 @@ import sys
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Send a Signal message via signal-cli.")
+    parser = argparse.ArgumentParser(
+        description="Send a Signal message via signal-cli."
+    )
     parser.add_argument("recipient", help="Recipient phone number (e.g. +15551234567)")
-    parser.add_argument("message", nargs="?", default=os.environ.get("SIGNAL_CLI_MESSAGE", "hello from shock-relay"))
+    parser.add_argument(
+        "message",
+        nargs="?",
+        default=os.environ.get("SIGNAL_CLI_MESSAGE", "hello from shock-relay"),
+    )
     script_dir = Path(__file__).resolve().parent
     parser.add_argument(
         "--config",
-        default=os.environ.get("SIGNAL_CLI_LOCAL_CONFIG", str(script_dir / "config.local.yaml")),
+        default=os.environ.get(
+            "SIGNAL_CLI_LOCAL_CONFIG", str(script_dir / "config.local.yaml")
+        ),
         help="Path to config.local.yaml (ignored by git).",
     )
     args = parser.parse_args()
@@ -36,7 +44,9 @@ def main() -> int:
     base_indent = None
 
     def val_from_line(line: str) -> str:
-        m = re.match(r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line)
+        m = re.match(
+            r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line
+        )
         if not m:
             return ""
         return next(v for v in m.groups() if v is not None)
@@ -50,7 +60,11 @@ def main() -> int:
 
         if line.strip() != "":
             indent = len(line) - len(line.lstrip())
-            if base_indent is not None and indent <= base_indent and not re.match(r"^\s*signal_cli:\s*$", line):
+            if (
+                base_indent is not None
+                and indent <= base_indent
+                and not re.match(r"^\s*signal_cli:\s*$", line)
+            ):
                 break
 
         if re.match(r"^\s*account:\s*", line):
@@ -77,4 +91,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

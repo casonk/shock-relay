@@ -22,14 +22,18 @@ def extract_signal_cli_fields(config_path: str) -> Tuple[str, str, str]:
     try:
         txt = Path(config_path).read_text(encoding="utf-8")
     except OSError as e:
-        raise RuntimeError(f"ERROR: Cannot read config file: {config_path} ({e})") from e
+        raise RuntimeError(
+            f"ERROR: Cannot read config file: {config_path} ({e})"
+        ) from e
 
     def get_in_signal_cli(key: str) -> str:
         lines = txt.splitlines()
         in_block = False
         base_indent = None
 
-        key_re = re.compile(rf"^\s*{re.escape(key)}:\s*(?:(\"([^\"]*)\")|('([^']*)')|([^\s#]+))\s*(?:#.*)?$")
+        key_re = re.compile(
+            rf"^\s*{re.escape(key)}:\s*(?:(\"([^\"]*)\")|('([^']*)')|([^\s#]+))\s*(?:#.*)?$"
+        )
 
         for line in lines:
             if not in_block:
@@ -91,7 +95,9 @@ def get_ip_address() -> str:
 
 def main() -> int:
     service_dir = Path(__file__).resolve().parent
-    config_path = os.environ.get("SIGNAL_CLI_LOCAL_CONFIG", str(service_dir / "config.local.yaml"))
+    config_path = os.environ.get(
+        "SIGNAL_CLI_LOCAL_CONFIG", str(service_dir / "config.local.yaml")
+    )
     receive_timeout_seconds = int(os.environ.get("RECEIVE_TIMEOUT_SECONDS", "120"))
     message_text_override = os.environ.get("MESSAGE_TEXT_OVERRIDE", "")
 
@@ -183,4 +189,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

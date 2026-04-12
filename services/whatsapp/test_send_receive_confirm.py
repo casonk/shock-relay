@@ -88,7 +88,9 @@ def main() -> int:
 
     since = str(max(0, int(time.time()) - 1))
     reg_token = f"{int(time.time())}-{uuid.uuid4().hex[:6]}"
-    test_payload = os.environ.get("MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test")
+    test_payload = os.environ.get(
+        "MESSAGE_TEXT_OVERRIDE", "hello from shock-relay test"
+    )
     test_message = "\n".join(
         [
             "shock-relay TEST",

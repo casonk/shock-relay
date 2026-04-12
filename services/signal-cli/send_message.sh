@@ -74,4 +74,3 @@ if [[ -n "$BUS_NAME" ]]; then
 else
   signal-cli -a "$ACCOUNT" send -m "$MESSAGE" "$TO"
 fi
-
