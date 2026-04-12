@@ -137,7 +137,9 @@ def load_config(config_path: str) -> TwilioConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
+        raise ConfigError(
+            f"ERROR: Cannot read config file: {config_path} ({exc})"
+        ) from exc
 
     config = parse_simple_yaml(config_text)
     repo_auto_pass = _load_repo_auto_pass_config()
@@ -149,26 +151,29 @@ def load_config(config_path: str) -> TwilioConfig:
     twilio_cfg = as_mapping(config.get("twilio"), "twilio")
     sms_cfg = as_mapping(twilio_cfg.get("sms"), "twilio.sms", allow_empty=True)
     tls_cfg = as_mapping(twilio_cfg.get("tls"), "twilio.tls", allow_empty=True)
-    account_sid_keepass_entry = (
-        optional_string(twilio_cfg.get("account_sid_keepass_entry"))
-        or repo_auto_pass.get("account_sid_keepass_entry", "")
-    )
-    auth_token_keepass_entry = (
-        optional_string(twilio_cfg.get("auth_token_keepass_entry"))
-        or repo_auto_pass.get("auth_token_keepass_entry", "")
-    )
-    from_phone_keepass_entry = (
-        optional_string(twilio_cfg.get("from_phone_keepass_entry"))
-        or repo_auto_pass.get("from_phone_keepass_entry", "")
-    )
+    account_sid_keepass_entry = optional_string(
+        twilio_cfg.get("account_sid_keepass_entry")
+    ) or repo_auto_pass.get("account_sid_keepass_entry", "")
+    auth_token_keepass_entry = optional_string(
+        twilio_cfg.get("auth_token_keepass_entry")
+    ) or repo_auto_pass.get("auth_token_keepass_entry", "")
+    from_phone_keepass_entry = optional_string(
+        twilio_cfg.get("from_phone_keepass_entry")
+    ) or repo_auto_pass.get("from_phone_keepass_entry", "")
 
-    api_base_url = optional_string(twilio_cfg.get("api_base_url")) or "https://api.twilio.com"
+    api_base_url = (
+        optional_string(twilio_cfg.get("api_base_url")) or "https://api.twilio.com"
+    )
     if not api_base_url.lower().startswith("https://"):
         raise ConfigError("ERROR: twilio.api_base_url must use https://")
 
     account_sid = (
         optional_string(twilio_cfg.get("account_sid"))
-        or resolve_env_value(optional_string(twilio_cfg.get("account_sid_env")), field_name="twilio.account_sid_env", required=False)
+        or resolve_env_value(
+            optional_string(twilio_cfg.get("account_sid_env")),
+            field_name="twilio.account_sid_env",
+            required=False,
+        )
         or _resolve_keepass_value(
             account_sid_keepass_entry,
             "username",
@@ -177,7 +182,11 @@ def load_config(config_path: str) -> TwilioConfig:
     )
     auth_token = (
         optional_string(twilio_cfg.get("auth_token"))
-        or resolve_env_value(optional_string(twilio_cfg.get("auth_token_env")), field_name="twilio.auth_token_env", required=False)
+        or resolve_env_value(
+            optional_string(twilio_cfg.get("auth_token_env")),
+            field_name="twilio.auth_token_env",
+            required=False,
+        )
         or _resolve_keepass_value(
             auth_token_keepass_entry,
             "password",
@@ -186,7 +195,11 @@ def load_config(config_path: str) -> TwilioConfig:
     )
     from_phone = (
         optional_string(twilio_cfg.get("from_phone"))
-        or resolve_env_value(optional_string(twilio_cfg.get("from_phone_env")), field_name="twilio.from_phone_env", required=False)
+        or resolve_env_value(
+            optional_string(twilio_cfg.get("from_phone_env")),
+            field_name="twilio.from_phone_env",
+            required=False,
+        )
         or _resolve_keepass_value(
             from_phone_keepass_entry,
             "username",
@@ -195,20 +208,30 @@ def load_config(config_path: str) -> TwilioConfig:
     )
 
     if not account_sid:
-        raise ConfigError("ERROR: Missing twilio.account_sid, twilio.account_sid_env, or twilio.account_sid_keepass_entry in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing twilio.account_sid, twilio.account_sid_env, or twilio.account_sid_keepass_entry in config.local.yaml"
+        )
     if not auth_token:
-        raise ConfigError("ERROR: Missing twilio.auth_token, twilio.auth_token_env, or twilio.auth_token_keepass_entry in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing twilio.auth_token, twilio.auth_token_env, or twilio.auth_token_keepass_entry in config.local.yaml"
+        )
     if not from_phone:
-        raise ConfigError("ERROR: Missing twilio.from_phone, twilio.from_phone_env, or twilio.from_phone_keepass_entry in config.local.yaml")
+        raise ConfigError(
+            "ERROR: Missing twilio.from_phone, twilio.from_phone_env, or twilio.from_phone_keepass_entry in config.local.yaml"
+        )
 
     timeout_seconds = parse_int(
         twilio_cfg.get("timeout_seconds"),
         default=30,
         field_name="twilio.timeout_seconds",
     )
-    sms_enabled = parse_bool(sms_cfg.get("enabled"), default=True, field_name="twilio.sms.enabled")
+    sms_enabled = parse_bool(
+        sms_cfg.get("enabled"), default=True, field_name="twilio.sms.enabled"
+    )
     if not sms_enabled:
-        raise ConfigError("ERROR: twilio.sms.enabled must be true to use the SMS scripts")
+        raise ConfigError(
+            "ERROR: twilio.sms.enabled must be true to use the SMS scripts"
+        )
 
     allowed_recipients = read_allowed_recipients(sms_cfg)
 
@@ -223,7 +246,9 @@ def load_config(config_path: str) -> TwilioConfig:
         required=False,
     )
     if insecure_skip_verify and ca_cert_path:
-        raise ConfigError("ERROR: Configure either twilio.tls.insecure_skip_verify or a CA cert path, not both")
+        raise ConfigError(
+            "ERROR: Configure either twilio.tls.insecure_skip_verify or a CA cert path, not both"
+        )
     if ca_cert_path and not Path(ca_cert_path).is_file():
         raise ConfigError(f"ERROR: CA certificate file does not exist: {ca_cert_path}")
 
@@ -279,7 +304,9 @@ def get_messages_list(response: HttpResponse) -> List[Any]:
     return messages
 
 
-def normalize_messages_response(messages: List[Any], limit: Optional[int] = None) -> Dict[str, Any]:
+def normalize_messages_response(
+    messages: List[Any], limit: Optional[int] = None
+) -> Dict[str, Any]:
     normalized = [normalize_message(item) for item in messages]
     if limit is not None:
         normalized = normalized[:limit]
@@ -344,7 +371,9 @@ def request_twilio(
 
 
 def build_messages_url(config: TwilioConfig) -> str:
-    return f"{config.api_base_url}/2010-04-01/Accounts/{config.account_sid}/Messages.json"
+    return (
+        f"{config.api_base_url}/2010-04-01/Accounts/{config.account_sid}/Messages.json"
+    )
 
 
 def request_form(
@@ -357,7 +386,9 @@ def request_form(
     insecure_skip_verify: bool = False,
     ca_cert_path: str = "",
 ) -> HttpResponse:
-    encoded_params = urllib.parse.urlencode({key: value for key, value in params.items() if value is not None})
+    encoded_params = urllib.parse.urlencode(
+        {key: value for key, value in params.items() if value is not None}
+    )
     request_url = url
     data = None
 
@@ -374,11 +405,17 @@ def request_form(
     if method != "GET":
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-    request = urllib.request.Request(url=request_url, data=data, headers=headers, method=method)
-    ssl_context = build_ssl_context(insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path)
+    request = urllib.request.Request(
+        url=request_url, data=data, headers=headers, method=method
+    )
+    ssl_context = build_ssl_context(
+        insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path
+    )
 
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds, context=ssl_context) as response:
+        with urllib.request.urlopen(
+            request, timeout=timeout_seconds, context=ssl_context
+        ) as response:
             text = response.read().decode(
                 response.headers.get_content_charset() or "utf-8",
                 errors="replace",
@@ -396,7 +433,9 @@ def request_form(
         raise GatewayError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
+def build_ssl_context(
+    insecure_skip_verify: bool, ca_cert_path: str
+) -> Optional[ssl.SSLContext]:
     if insecure_skip_verify:
         return ssl._create_unverified_context()
     if ca_cert_path:
@@ -409,15 +448,23 @@ def validate_recipient(config: TwilioConfig, recipient: str) -> None:
         return
     if any(phone_matches(recipient, allowed) for allowed in config.allowed_recipients):
         return
-    raise ConfigError(f"ERROR: Recipient is not allowed by twilio.sms.allowed_recipients: {recipient}")
+    raise ConfigError(
+        f"ERROR: Recipient is not allowed by twilio.sms.allowed_recipients: {recipient}"
+    )
 
 
 def read_allowed_recipients(sms_cfg: Dict[str, Any]) -> List[str]:
-    recipients = read_scalar_list(sms_cfg.get("allowed_recipients"), "twilio.sms.allowed_recipients")
-    env_names = read_scalar_list(sms_cfg.get("allowed_recipient_envs"), "twilio.sms.allowed_recipient_envs")
+    recipients = read_scalar_list(
+        sms_cfg.get("allowed_recipients"), "twilio.sms.allowed_recipients"
+    )
+    env_names = read_scalar_list(
+        sms_cfg.get("allowed_recipient_envs"), "twilio.sms.allowed_recipient_envs"
+    )
 
     for env_name in env_names:
-        raw_value = resolve_env_value(env_name, field_name=f"twilio.sms.allowed_recipient_envs[{env_name}]")
+        raw_value = resolve_env_value(
+            env_name, field_name=f"twilio.sms.allowed_recipient_envs[{env_name}]"
+        )
         recipients.extend(split_values(raw_value))
 
     normalized: List[str] = []
@@ -470,7 +517,9 @@ def read_scalar_list(value: Any, field_name: str) -> List[str]:
     for item in value:
         item_str = optional_string(item)
         if not item_str:
-            raise ConfigError(f"ERROR: {field_name} must contain only non-empty scalars")
+            raise ConfigError(
+                f"ERROR: {field_name} must contain only non-empty scalars"
+            )
         result.append(item_str)
     return result
 
@@ -508,18 +557,24 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(
+    env_name: Optional[str], field_name: str, required: bool = True
+) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
     if value:
         return value
     if required:
-        raise ConfigError(f"ERROR: Environment variable {env_name} referenced by {field_name} is not set")
+        raise ConfigError(
+            f"ERROR: Environment variable {env_name} referenced by {field_name} is not set"
+        )
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(
+    value: Any, field_name: str, allow_empty: bool = False
+) -> Dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -549,7 +604,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
 
         if stripped.startswith("- "):
             if not isinstance(parent, list):
-                raise ConfigError(f"ERROR: Unexpected YAML list item near line {index + 1}")
+                raise ConfigError(
+                    f"ERROR: Unexpected YAML list item near line {index + 1}"
+                )
             parent.append(parse_scalar(stripped[2:].strip()))
             continue
 
@@ -580,7 +637,9 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(
+    lines: List[str], start_index: int, current_indent: int
+) -> Optional[type]:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():
@@ -619,7 +678,11 @@ def parse_scalar(value_text: str) -> Any:
         return {}
     if re.fullmatch(r"-?\d+", value_text):
         return int(value_text)
-    if len(value_text) >= 2 and value_text[0] == value_text[-1] and value_text[0] in ("'", '"'):
+    if (
+        len(value_text) >= 2
+        and value_text[0] == value_text[-1]
+        and value_text[0] in ("'", '"')
+    ):
         if value_text[0] == "'":
             return value_text[1:-1].replace("''", "'")
         return bytes(value_text[1:-1], "utf-8").decode("unicode_escape")

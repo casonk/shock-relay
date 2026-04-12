@@ -3,11 +3,19 @@ import argparse
 import os
 import sys
 
-from common import ConfigError, GatewayError, default_config_path, load_config, send_message
+from common import (
+    ConfigError,
+    GatewayError,
+    default_config_path,
+    load_config,
+    send_message,
+)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Send a Telegram message via the Bot API.")
+    parser = argparse.ArgumentParser(
+        description="Send a Telegram message via the Bot API."
+    )
     parser.add_argument("chat_id", help="Telegram chat ID or @channelusername")
     parser.add_argument(
         "message",
@@ -29,7 +37,12 @@ def main() -> int:
 
     try:
         config = load_config(args.config)
-        response = send_message(config, chat_id=args.chat_id, message=args.message, parse_mode=args.parse_mode)
+        response = send_message(
+            config,
+            chat_id=args.chat_id,
+            message=args.message,
+            parse_mode=args.parse_mode,
+        )
     except ConfigError as exc:
         print(str(exc), file=sys.stderr)
         return 2

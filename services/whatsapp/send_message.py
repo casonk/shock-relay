@@ -3,12 +3,22 @@ import argparse
 import os
 import sys
 
-from common import ConfigError, GatewayError, default_config_path, load_config, send_message
+from common import (
+    ConfigError,
+    GatewayError,
+    default_config_path,
+    load_config,
+    send_message,
+)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Send a WhatsApp message via a configured HTTPS gateway.")
-    parser.add_argument("recipient", help="Recipient identifier (e.g. whatsapp:+15551234567)")
+    parser = argparse.ArgumentParser(
+        description="Send a WhatsApp message via a configured HTTPS gateway."
+    )
+    parser.add_argument(
+        "recipient", help="Recipient identifier (e.g. whatsapp:+15551234567)"
+    )
     parser.add_argument(
         "message",
         nargs="?",

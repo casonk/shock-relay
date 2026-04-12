@@ -9,7 +9,10 @@ from common import ConfigError, MailError, default_config_path, load_config, sen
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Send an email via Gmail SMTP.")
-    parser.add_argument("to_address", help="Recipient email address. Comma-separated values are allowed.")
+    parser.add_argument(
+        "to_address",
+        help="Recipient email address. Comma-separated values are allowed.",
+    )
     parser.add_argument("subject", help="Email subject line.")
     parser.add_argument(
         "body",

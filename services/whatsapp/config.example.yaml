@@ -41,7 +41,7 @@ http:
   auth:
     bearer_token_env:
     basic_username_env:
-    basic_password_env
+    basic_password_env:
 
   # TLS settings for HTTPS gateways.
   tls:

@@ -3,11 +3,20 @@ import argparse
 import json
 import sys
 
-from common import ConfigError, MailError, default_config_path, load_config, test_imap_connection, test_smtp_connection
+from common import (
+    ConfigError,
+    MailError,
+    default_config_path,
+    load_config,
+    test_imap_connection,
+    test_smtp_connection,
+)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate Gmail IMAP and SMTP connectivity.")
+    parser = argparse.ArgumentParser(
+        description="Validate Gmail IMAP and SMTP connectivity."
+    )
     parser.add_argument(
         "--config",
         default=default_config_path(),
@@ -18,9 +27,15 @@ def main() -> int:
         default=None,
         help="Mailbox to use for the IMAP select check. Defaults to the first configured mailbox.",
     )
-    parser.add_argument("--skip-imap", action="store_true", help="Skip the IMAP login/select test.")
-    parser.add_argument("--skip-smtp", action="store_true", help="Skip the SMTP login/noop test.")
-    parser.add_argument("--pretty", action="store_true", help="Pretty-print the JSON response.")
+    parser.add_argument(
+        "--skip-imap", action="store_true", help="Skip the IMAP login/select test."
+    )
+    parser.add_argument(
+        "--skip-smtp", action="store_true", help="Skip the SMTP login/noop test."
+    )
+    parser.add_argument(
+        "--pretty", action="store_true", help="Pretty-print the JSON response."
+    )
     args = parser.parse_args()
 
     try:

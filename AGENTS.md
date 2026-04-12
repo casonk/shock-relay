@@ -338,7 +338,7 @@ from typing import List
 class NotificationRelay:
     def __init__(self, channels: List[str]):
         self.channels = channels
-    
+
     def send(self, message: str):
         """Send message to all configured channels"""
         for channel in self.channels:
@@ -347,14 +347,14 @@ class NotificationRelay:
             elif channel == "telegram":
                 self._send_telegram(message)
             # Add more channels as needed
-    
+
     def _send_signal(self, message: str):
         subprocess.run([
             "./services/signal-cli/send_message.py",
             "+15551234567",
             message
         ])
-    
+
     def _send_telegram(self, message: str):
         # Future implementation
         pass
