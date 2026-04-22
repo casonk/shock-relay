@@ -4,7 +4,14 @@ import json
 import os
 import sys
 
-from common import ConfigError, MailError, default_config_path, load_config, send_email
+from common import (
+    ConfigError,
+    MailError,
+    default_config_path,
+    load_config,
+    parse_custom_header_args,
+    send_email,
+)
 
 
 def main() -> int:
@@ -37,6 +44,12 @@ def main() -> int:
         default=default_config_path(),
         help="Path to config.local.yaml (ignored by git).",
     )
+    parser.add_argument(
+        "--header",
+        action="append",
+        default=[],
+        help="Custom email header in 'Name: value' form. May be supplied multiple times.",
+    )
     args = parser.parse_args()
 
     try:
@@ -48,6 +61,7 @@ def main() -> int:
             body=args.body,
             cc_addresses=args.cc,
             bcc_addresses=args.bcc,
+            headers=parse_custom_header_args(args.header),
         )
     except ConfigError as exc:
         print(str(exc), file=sys.stderr)
