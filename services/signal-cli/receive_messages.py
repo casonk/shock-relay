@@ -1,62 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-from pathlib import Path
-import re
 import os
 import subprocess
 import sys
-from typing import Optional, Tuple
+from pathlib import Path
 
-
-def extract_account_and_bus_name(config_path: str) -> Tuple[str, Optional[str]]:
-    try:
-        config_text = Path(config_path).read_text(encoding="utf-8")
-    except OSError as e:
-        raise RuntimeError(
-            f"ERROR: Cannot read config file: {config_path} ({e})"
-        ) from e
-
-    lines = config_text.splitlines()
-    account = ""
-    bus_name = None
-
-    in_signal_cli = False
-    base_indent = None
-
-    def val_from_line(line: str) -> str:
-        # Supports: key: "value", key: 'value', key: value
-        m = re.match(
-            r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line
-        )
-        if not m:
-            return ""
-        return next(v for v in m.groups() if v is not None)
-
-    for line in lines:
-        if not in_signal_cli:
-            if re.match(r"^\s*signal_cli:\s*$", line):
-                in_signal_cli = True
-                base_indent = len(line) - len(line.lstrip())
-            continue
-
-        if line.strip() != "":
-            indent = len(line) - len(line.lstrip())
-            if (
-                base_indent is not None
-                and indent <= base_indent
-                and not re.match(r"^\s*signal_cli:\s*$", line)
-            ):
-                break
-
-        if re.match(r"^\s*account:\s*", line):
-            account = val_from_line(line)
-        elif re.match(r"^\s*bus_name:\s*", line):
-            bus_name = val_from_line(line) or None
-
-    if not account:
-        raise RuntimeError("ERROR: Missing signal_cli.account in config.local.yaml")
-
-    return account, bus_name
+from common import extract_account_and_bus_name
 
 
 def main() -> int:

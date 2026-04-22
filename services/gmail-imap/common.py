@@ -359,11 +359,13 @@ def send_email(
     body: str,
     cc_addresses: Optional[List[str]] = None,
     bcc_addresses: Optional[List[str]] = None,
+    headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     validate_smtp(config)
     normalized_to = normalize_email_list(to_addresses)
     normalized_cc = normalize_email_list(cc_addresses or [])
     normalized_bcc = normalize_email_list(bcc_addresses or [])
+    normalized_headers = normalize_custom_headers(headers or {})
 
     if not normalized_to:
         raise ConfigError("ERROR: At least one recipient email address is required")
@@ -379,6 +381,8 @@ def send_email(
     message["Subject"] = subject
     message["Date"] = formatdate(localtime=False)
     message["Message-ID"] = make_msgid()
+    for name, value in normalized_headers.items():
+        message[name] = value
     message.set_content(body)
 
     try:
@@ -397,6 +401,7 @@ def send_email(
         "to": normalized_to,
         "cc": normalized_cc,
         "bcc": normalized_bcc,
+        "headers": normalized_headers,
         "subject": subject,
     }
 
@@ -636,6 +641,7 @@ def normalize_message(mailbox: str, uid: int, payload_bytes: bytes) -> Dict[str,
         "date": date_header,
         "timestamp": parse_date_epoch(date_header),
         "from": sender,
+        "headers": normalize_message_headers(message),
         "to": to_header,
         "cc": cc_header,
         "subject": subject,
@@ -757,6 +763,46 @@ def decode_mime_header(value: Any) -> str:
         return str(make_header(decode_header(raw)))
     except Exception:
         return raw
+
+
+def normalize_message_headers(message: Any) -> Dict[str, str]:
+    headers: Dict[str, str] = {}
+    for name, value in message.items():
+        decoded = decode_mime_header(value)
+        existing = headers.get(name, "")
+        if existing and decoded:
+            headers[name] = f"{existing}, {decoded}"
+            continue
+        headers[name] = decoded
+    return headers
+
+
+def normalize_custom_headers(headers: Dict[str, Any]) -> Dict[str, str]:
+    normalized: Dict[str, str] = {}
+    for name, value in headers.items():
+        header_name = str(name or "").strip()
+        header_value = str(value or "").strip()
+        if not header_name:
+            raise ConfigError("ERROR: Custom email header name cannot be empty")
+        if ":" in header_name:
+            raise ConfigError("ERROR: Custom email header names must not contain ':'")
+        if any(ch in header_name for ch in "\r\n") or any(
+            ch in header_value for ch in "\r\n"
+        ):
+            raise ConfigError("ERROR: Custom email headers must not contain newlines")
+        normalized[header_name] = header_value
+    return normalized
+
+
+def parse_custom_header_args(values: Iterable[str]) -> Dict[str, str]:
+    headers: Dict[str, str] = {}
+    for raw_value in values:
+        text = str(raw_value or "")
+        if ":" not in text:
+            raise ConfigError("ERROR: --header must use the form 'Name: value'")
+        name, value = text.split(":", 1)
+        headers.update(normalize_custom_headers({name: value}))
+    return headers
 
 
 def parse_date_epoch(value: str) -> Optional[int]:
