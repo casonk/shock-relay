@@ -2,6 +2,8 @@
 
 shock-relay is an open messaging relay for automation scripts, agents, and infrastructure. It provides a unified way to send notifications across platforms like Signal, Telegram, WhatsApp, SMS, and email through one consistent interface.
 
+Consent reference: [`../../doc-repos/my-consent/messaging-and-email.md`](../../doc-repos/my-consent/messaging-and-email.md) documents the explicit consent covering personal messaging and email processing handled by this repo. Twilio toll-free messaging, when used, is additionally covered by [`../../doc-repos/my-consent/twilio.md`](../../doc-repos/my-consent/twilio.md).
+
 ## Overview
 
 shock-relay simplifies cross-platform messaging by providing standardized interfaces to multiple messaging services. Whether you're building automation workflows, monitoring systems, or AI agents, shock-relay gives you a consistent way to communicate across different platforms.

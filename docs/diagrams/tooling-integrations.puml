@@ -6,6 +6,7 @@ skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
 rectangle ".github/workflows/ci.yml\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
+rectangle "scripts/run_tachometer_profile.sh\n3 detected tools" as source_scripts_run_tachometer_profile_sh #E0F2FE
 rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
 rectangle "services/signal-cli/send_message.sh\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
 rectangle "services/signal-cli/test_send_receive_confirm.sh\n6 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
@@ -77,6 +78,7 @@ cloud "reduce" as tool_reduce #FEF3C7
 cloud "result" as tool_result_2 #FEF3C7
 cloud "rg" as tool_rg #FEF3C7
 cloud "rm" as tool_rm #FEF3C7
+cloud "run" as tool_run #FEF3C7
 cloud "s" as tool_s #FEF3C7
 cloud "sed" as tool_sed #FEF3C7
 cloud "separator" as tool_separator #FEF3C7
@@ -85,6 +87,8 @@ cloud "signal-cli" as tool_signal_cli #FEF3C7
 cloud "signal_args+=(--bus-name" as tool_signal_args_bus_name #FEF3C7
 cloud "sleep" as tool_sleep #FEF3C7
 cloud "substr(s," as tool_substr_s #FEF3C7
+cloud "summarize" as tool_summarize #FEF3C7
+cloud "tachometer" as tool_tachometer #FEF3C7
 cloud "telegram_load_config" as tool_telegram_load_config #FEF3C7
 cloud "telegram_send_message_request" as tool_telegram_send_message_request #FEF3C7
 cloud "tonumber" as tool_tonumber #FEF3C7
@@ -104,6 +108,9 @@ source_github_workflows_ci_yml --> tool_apt_get
 source_github_workflows_ci_yml --> tool_compileall
 source_github_workflows_ci_yml --> tool_services
 source_github_workflows_ci_yml --> tool_xargs
+source_scripts_run_tachometer_profile_sh --> tool_run
+source_scripts_run_tachometer_profile_sh --> tool_summarize
+source_scripts_run_tachometer_profile_sh --> tool_tachometer
 source_services_signal_cli_receive_messages_sh --> tool_python3
 source_services_signal_cli_receive_messages_sh --> tool_signal_cli
 source_services_signal_cli_send_message_sh --> tool_python3
@@ -280,7 +287,7 @@ source_services_whatsapp_test_send_receive_confirm_sh --> tool_sleep
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_config
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
 note as toolingGraphSummary
-Scanned 16 tooling entrypoints.
-Detected 77 third-party tools.
+Scanned 17 tooling entrypoints.
+Detected 80 third-party tools.
 end note
 @enduml
