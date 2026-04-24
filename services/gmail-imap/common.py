@@ -58,6 +58,11 @@ class SmtpSettings:
     timeout_seconds: int
     allowed_recipients: List[str]
     tls: TlsSettings
+    verify_delivery: bool
+    verify_attempts: int
+    verify_delay_seconds: int
+    verify_recent_limit: int
+    verify_mailboxes: List[str]
 
 
 @dataclass
@@ -91,6 +96,13 @@ IMAP_TRANSIENT_ERROR_MARKERS = (
     "timed out",
     "timeout",
     "temporary failure",
+)
+DEFAULT_SENT_MAILBOXES = (
+    "[Gmail]/Sent Mail",
+    "[GoogleMail]/Sent Mail",
+    "Sent",
+    "Sent Mail",
+    "Sent Items",
 )
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _AUTO_PASS_CONFIG_PATH = _REPO_ROOT / "config" / "auto-pass.ini"
@@ -328,6 +340,38 @@ def load_config(config_path: str) -> GmailImapConfig:
         default=30,
         field_name="smtp.timeout_seconds",
     )
+    smtp_verify_delivery = parse_bool(
+        smtp_cfg.get("verify_delivery"),
+        default=True,
+        field_name="smtp.verify_delivery",
+    )
+    smtp_verify_attempts = max(
+        1,
+        parse_int(
+            smtp_cfg.get("verify_attempts"),
+            default=4,
+            field_name="smtp.verify_attempts",
+        ),
+    )
+    smtp_verify_delay_seconds = max(
+        1,
+        parse_int(
+            smtp_cfg.get("verify_delay_seconds"),
+            default=2,
+            field_name="smtp.verify_delay_seconds",
+        ),
+    )
+    smtp_verify_recent_limit = max(
+        1,
+        parse_int(
+            smtp_cfg.get("verify_recent_limit"),
+            default=10,
+            field_name="smtp.verify_recent_limit",
+        ),
+    )
+    smtp_verify_mailboxes = normalize_optional_mailboxes(
+        read_scalar_list(smtp_cfg.get("verify_mailboxes"), "smtp.verify_mailboxes")
+    )
     smtp_allowed_recipients = read_allowed_recipients(smtp_cfg)
     smtp_tls = load_tls_settings(smtp_tls_cfg, prefix="smtp.tls")
 
@@ -357,6 +401,11 @@ def load_config(config_path: str) -> GmailImapConfig:
             timeout_seconds=smtp_timeout_seconds,
             allowed_recipients=smtp_allowed_recipients,
             tls=smtp_tls,
+            verify_delivery=smtp_verify_delivery,
+            verify_attempts=smtp_verify_attempts,
+            verify_delay_seconds=smtp_verify_delay_seconds,
+            verify_recent_limit=smtp_verify_recent_limit,
+            verify_mailboxes=smtp_verify_mailboxes,
         ),
         filters=InboxFilters(
             unseen_only=parse_bool(
@@ -405,22 +454,34 @@ def send_email(
 
     try:
         with open_smtp_connection(config) as client:
-            client.send_message(
+            refused_recipients = client.send_message(
                 message, from_addr=config.smtp.from_address, to_addrs=all_recipients
             )
     except MailError:
         raise
     except Exception as exc:
         raise MailError(f"SMTP send failed: {type(exc).__name__}: {exc}") from exc
+    refused_recipients = refused_recipients or {}
+    if refused_recipients:
+        raise MailError(
+            "SMTP send rejected recipient(s): "
+            f"{format_smtp_refusals(refused_recipients)}"
+        )
+
+    delivery: Dict[str, Any] = {"verified": False, "skipped": True}
+    message_id = str(message.get("Message-ID") or "")
+    if config.smtp.verify_delivery:
+        delivery = verify_sent_delivery(config, message_id=message_id)
 
     return {
-        "message_id": str(message.get("Message-ID") or ""),
+        "message_id": message_id,
         "from": config.smtp.from_address,
         "to": normalized_to,
         "cc": normalized_cc,
         "bcc": normalized_bcc,
         "headers": normalized_headers,
         "subject": subject,
+        "delivery": delivery,
     }
 
 
@@ -543,6 +604,63 @@ def test_smtp_connection(config: GmailImapConfig) -> Dict[str, Any]:
     }
 
 
+def verify_sent_delivery(config: GmailImapConfig, message_id: str) -> Dict[str, Any]:
+    validate_imap(config)
+    canonical_message_id = normalize_message_id_header(message_id)
+    if not canonical_message_id:
+        raise MailError("SMTP send verification failed: missing Message-ID header")
+
+    mailbox_context = (
+        ",".join(config.smtp.verify_mailboxes)
+        if config.smtp.verify_mailboxes
+        else "auto"
+    )
+    last_error: BaseException | None = None
+    last_mailboxes = list(DEFAULT_SENT_MAILBOXES)
+    for attempt in range(1, config.smtp.verify_attempts + 1):
+        try:
+            with open_imap_connection(config) as conn:
+                candidate_mailboxes = resolve_sent_mailboxes(
+                    conn, configured=config.smtp.verify_mailboxes
+                )
+                last_mailboxes = candidate_mailboxes or list(DEFAULT_SENT_MAILBOXES)
+                match = find_message_in_mailboxes(
+                    conn=conn,
+                    mailboxes=last_mailboxes,
+                    message_id=canonical_message_id,
+                    recent_limit=config.smtp.verify_recent_limit,
+                    search_charset=config.imap.search_charset,
+                )
+            if match is not None:
+                return {
+                    "verified": True,
+                    "attempts": attempt,
+                    "mailbox": match["mailbox"],
+                    "uid": match["uid"],
+                    "message_id": canonical_message_id,
+                }
+            last_error = None
+        except Exception as exc:
+            last_error = exc
+            transient = _is_transient_imap_exception(exc)
+            if not transient or attempt >= config.smtp.verify_attempts:
+                raise MailError(
+                    "SMTP accepted the message but sent-copy verification failed "
+                    f"after {attempt} attempt(s) "
+                    f"(message_id={canonical_message_id}, mailboxes={mailbox_context}, "
+                    f"timeout={config.imap.timeout_seconds}s): {exc}"
+                ) from exc
+        if attempt < config.smtp.verify_attempts:
+            time.sleep(config.smtp.verify_delay_seconds * attempt)
+    raise MailError(
+        "SMTP accepted the message but no sent copy was found after "
+        f"{config.smtp.verify_attempts} attempt(s) "
+        f"(message_id={canonical_message_id}, mailboxes={','.join(last_mailboxes)}, "
+        f"recent_limit={config.smtp.verify_recent_limit}, "
+        f"timeout={config.imap.timeout_seconds}s)."
+    ) from last_error
+
+
 def _list_messages_once(
     config: GmailImapConfig,
     selected_mailboxes: List[str],
@@ -604,6 +722,101 @@ def _list_messages_once(
                     continue
                 messages.append(normalize_message(mailbox, uid, payload_bytes))
     return messages
+
+
+def resolve_sent_mailboxes(conn: Any, configured: List[str]) -> List[str]:
+    discovered: List[str] = []
+    try:
+        status, data = conn.list()
+    except Exception:
+        status, data = "NO", []
+    if status == "OK":
+        discovered = parse_special_use_mailboxes(data, special_use="\\Sent")
+    return normalize_optional_mailboxes(
+        list(configured) + discovered + list(DEFAULT_SENT_MAILBOXES)
+    )
+
+
+def parse_special_use_mailboxes(data: Any, special_use: str) -> List[str]:
+    results: List[str] = []
+    for item in data or []:
+        text = (
+            item.decode("utf-8", errors="replace")
+            if isinstance(item, bytes)
+            else str(item)
+        )
+        match = re.match(r'^\((?P<flags>[^)]*)\)\s+"[^"]*"\s+(?P<mailbox>.+)$', text)
+        if not match:
+            continue
+        flags = match.group("flags")
+        mailbox = match.group("mailbox").strip()
+        if special_use not in flags:
+            continue
+        if mailbox.startswith('"') and mailbox.endswith('"'):
+            mailbox = mailbox[1:-1]
+        results.append(mailbox)
+    return normalize_optional_mailboxes(results)
+
+
+def find_message_in_mailboxes(
+    conn: Any,
+    mailboxes: List[str],
+    message_id: str,
+    recent_limit: int,
+    search_charset: Optional[str],
+) -> Optional[Dict[str, Any]]:
+    canonical_message_id = normalize_message_id_header(message_id)
+    for mailbox in mailboxes:
+        try:
+            status, _ = conn.select(mailbox, readonly=True)
+        except Exception as exc:
+            raise MailError(
+                f"IMAP sent-mail select failed in {mailbox}: {type(exc).__name__}: {exc}"
+            ) from exc
+        if status != "OK":
+            continue
+        try:
+            status, data = conn.uid("search", search_charset, "ALL")
+        except Exception as exc:
+            raise MailError(
+                f"IMAP sent-mail search failed in {mailbox}: {type(exc).__name__}: {exc}"
+            ) from exc
+        if status != "OK":
+            raise MailError(
+                f"IMAP sent-mail search failed in {mailbox}: status={status}"
+            )
+
+        uids = parse_int_uid_list(data)
+        if not uids:
+            continue
+
+        for uid in reversed(uids[-recent_limit:]):
+            try:
+                status, msg_data = conn.uid("fetch", str(uid), "(RFC822)")
+            except Exception as exc:
+                raise MailError(
+                    f"IMAP sent-mail fetch failed for {uid} in {mailbox}: "
+                    f"{type(exc).__name__}: {exc}"
+                ) from exc
+            if status != "OK":
+                raise MailError(
+                    f"IMAP sent-mail fetch failed for {uid} in {mailbox}: status={status}"
+                )
+            payload_bytes = extract_fetch_payload(msg_data)
+            if not payload_bytes:
+                continue
+            normalized = normalize_message(mailbox, uid, payload_bytes)
+            if (
+                normalize_message_id_header(normalized.get("message_id"))
+                != canonical_message_id
+            ):
+                continue
+            return {
+                "mailbox": mailbox,
+                "uid": uid,
+                "message_id": canonical_message_id,
+            }
+    return None
 
 
 def _format_imap_context(
@@ -990,6 +1203,21 @@ def normalize_mailboxes(values: Iterable[str]) -> List[str]:
     return result or ["INBOX"]
 
 
+def normalize_optional_mailboxes(values: Iterable[str]) -> List[str]:
+    result: List[str] = []
+    seen = set()
+    for value in values:
+        mailbox = str(value or "").strip()
+        if not mailbox:
+            continue
+        key = mailbox.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(mailbox)
+    return result
+
+
 def normalize_email_list(values: Iterable[str]) -> List[str]:
     result: List[str] = []
     seen = set()
@@ -1020,6 +1248,10 @@ def validate_recipients(config: GmailImapConfig, recipients: List[str]) -> None:
 def canonical_email(value: Any) -> str:
     _, address = parseaddr(str(value or ""))
     return address.strip().lower()
+
+
+def normalize_message_id_header(value: Any) -> str:
+    return re.sub(r"\s+", "", str(value or "").strip())
 
 
 def validate_imap(config: GmailImapConfig) -> None:
@@ -1081,6 +1313,20 @@ def build_ssl_context(tls: TlsSettings) -> Optional[ssl.SSLContext]:
     if tls.ca_cert_path:
         return ssl.create_default_context(cafile=tls.ca_cert_path)
     return None
+
+
+def format_smtp_refusals(refused_recipients: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    for recipient, detail in refused_recipients.items():
+        if isinstance(detail, tuple) and len(detail) >= 2:
+            code = detail[0]
+            text = detail[1]
+            if isinstance(text, bytes):
+                text = text.decode("utf-8", errors="replace")
+            parts.append(f"{recipient} ({code}: {text})")
+            continue
+        parts.append(f"{recipient} ({detail})")
+    return ", ".join(parts)
 
 
 def parse_exists_count(data: Any) -> int:
