@@ -77,6 +77,15 @@ smtp:
 
   timeout_seconds: 30
 
+  # Verify that Gmail persisted a sent copy after SMTP acceptance.
+  # This confirms the message landed in a sent mailbox; it does not prove the
+  # remote recipient has received or read it.
+  verify_delivery: true
+  verify_attempts: 4
+  verify_delay_seconds: 2
+  verify_recent_limit: 10
+  verify_mailboxes: []
+
   # Optional recipient allowlist for safety.
   allowed_recipients: []
   allowed_recipient_envs: []
