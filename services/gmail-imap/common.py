@@ -6,6 +6,7 @@ import re
 import socket
 import smtplib
 import ssl
+import time
 from dataclasses import dataclass
 from email import message_from_bytes
 from email.header import decode_header, make_header
@@ -80,6 +81,17 @@ ENTRY_NOT_FOUND_MARKERS = (
     "could not find",
 )
 DEFAULT_KEEPASS_PROFILE = "infra"
+IMAP_TRANSIENT_RETRY_ATTEMPTS = 3
+IMAP_TRANSIENT_RETRY_DELAY_SECONDS = 1.0
+IMAP_TRANSIENT_ERROR_MARKERS = (
+    "system error",
+    "eof occurred in violation of protocol",
+    "connection reset",
+    "connection closed",
+    "timed out",
+    "timeout",
+    "temporary failure",
+)
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _AUTO_PASS_CONFIG_PATH = _REPO_ROOT / "config" / "auto-pass.ini"
 
@@ -162,10 +174,16 @@ def _resolve_keepass_value(
             lowered = str(exc).lower()
             if any(marker in lowered for marker in ENTRY_NOT_FOUND_MARKERS):
                 continue
-            raise
+            raise ConfigError(
+                "ERROR: KeePassXC resolution failed for "
+                f"entry={candidate!r} field={field!r} profile={profile!r}: {exc}"
+            ) from exc
         return result.get("value", "")
     if last_error is not None:
-        raise last_error
+        raise ConfigError(
+            "ERROR: KeePassXC entry resolution failed for "
+            f"entry={entry!r} field={field!r} profile={profile!r}: {last_error}"
+        ) from last_error
     return ""
 
 
@@ -430,46 +448,39 @@ def list_messages(
     ).strip()
     effective_limit = max(1, limit)
 
+    context = _format_imap_context(
+        config=config,
+        selected_mailboxes=selected_mailboxes,
+        limit=effective_limit,
+        since_days=since_days,
+        unseen_only=effective_unseen_only,
+    )
     messages: List[Dict[str, Any]] = []
-    try:
-        with open_imap_connection(config) as conn:
-            for mailbox in selected_mailboxes:
-                status, _ = conn.select(mailbox, readonly=config.imap.readonly)
-                if status != "OK":
-                    raise MailError(f"IMAP mailbox select failed: {mailbox} ({status})")
-
-                search_terms = build_search_terms(
-                    unseen_only=effective_unseen_only,
-                    from_contains=effective_from_contains,
-                    subject_contains=effective_subject_contains,
-                    since_days=since_days,
-                )
-                status, data = conn.uid(
-                    "search", config.imap.search_charset, *search_terms
-                )
-                if status != "OK":
-                    raise MailError(f"IMAP UID search failed in {mailbox}: {status}")
-
-                uids = parse_int_uid_list(data)
-                if not uids:
-                    continue
-
-                for uid in reversed(uids[-effective_limit:]):
-                    status, msg_data = conn.uid("fetch", str(uid), "(RFC822)")
-                    if status != "OK":
-                        raise MailError(
-                            f"IMAP UID fetch failed for {uid} in {mailbox}: {status}"
-                        )
-                    payload_bytes = extract_fetch_payload(msg_data)
-                    if not payload_bytes:
-                        continue
-                    messages.append(normalize_message(mailbox, uid, payload_bytes))
-    except MailError:
-        raise
-    except Exception as exc:
+    last_error: BaseException | None = None
+    for attempt in range(1, IMAP_TRANSIENT_RETRY_ATTEMPTS + 1):
+        try:
+            messages = _list_messages_once(
+                config=config,
+                selected_mailboxes=selected_mailboxes,
+                effective_unseen_only=effective_unseen_only,
+                effective_from_contains=effective_from_contains,
+                effective_subject_contains=effective_subject_contains,
+                since_days=since_days,
+                effective_limit=effective_limit,
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+            transient = _is_transient_imap_exception(exc)
+            if not transient or attempt >= IMAP_TRANSIENT_RETRY_ATTEMPTS:
+                raise MailError(
+                    f"IMAP inbox check failed after {attempt} attempt(s) ({context}): {exc}"
+                ) from exc
+            time.sleep(IMAP_TRANSIENT_RETRY_DELAY_SECONDS * attempt)
+    if last_error is not None and not messages:
         raise MailError(
-            f"IMAP inbox check failed: {type(exc).__name__}: {exc}"
-        ) from exc
+            f"IMAP inbox check failed ({context}): {last_error}"
+        ) from last_error
 
     messages.sort(
         key=lambda item: (
@@ -532,6 +543,114 @@ def test_smtp_connection(config: GmailImapConfig) -> Dict[str, Any]:
     }
 
 
+def _list_messages_once(
+    config: GmailImapConfig,
+    selected_mailboxes: List[str],
+    effective_unseen_only: bool,
+    effective_from_contains: str,
+    effective_subject_contains: str,
+    since_days: Optional[int],
+    effective_limit: int,
+) -> List[Dict[str, Any]]:
+    messages: List[Dict[str, Any]] = []
+    with open_imap_connection(config) as conn:
+        for mailbox in selected_mailboxes:
+            try:
+                status, _ = conn.select(mailbox, readonly=config.imap.readonly)
+            except Exception as exc:
+                raise MailError(
+                    f"IMAP mailbox select failed in {mailbox}: {type(exc).__name__}: {exc}"
+                ) from exc
+            if status != "OK":
+                raise MailError(
+                    f"IMAP mailbox select failed in {mailbox}: status={status}"
+                )
+
+            search_terms = build_search_terms(
+                unseen_only=effective_unseen_only,
+                from_contains=effective_from_contains,
+                subject_contains=effective_subject_contains,
+                since_days=since_days,
+            )
+            try:
+                status, data = conn.uid(
+                    "search", config.imap.search_charset, *search_terms
+                )
+            except Exception as exc:
+                raise MailError(
+                    f"IMAP UID search failed in {mailbox}: {type(exc).__name__}: {exc}"
+                ) from exc
+            if status != "OK":
+                raise MailError(f"IMAP UID search failed in {mailbox}: status={status}")
+
+            uids = parse_int_uid_list(data)
+            if not uids:
+                continue
+
+            for uid in reversed(uids[-effective_limit:]):
+                try:
+                    status, msg_data = conn.uid("fetch", str(uid), "(RFC822)")
+                except Exception as exc:
+                    raise MailError(
+                        f"IMAP UID fetch failed for {uid} in {mailbox}: "
+                        f"{type(exc).__name__}: {exc}"
+                    ) from exc
+                if status != "OK":
+                    raise MailError(
+                        f"IMAP UID fetch failed for {uid} in {mailbox}: status={status}"
+                    )
+                payload_bytes = extract_fetch_payload(msg_data)
+                if not payload_bytes:
+                    continue
+                messages.append(normalize_message(mailbox, uid, payload_bytes))
+    return messages
+
+
+def _format_imap_context(
+    config: GmailImapConfig,
+    selected_mailboxes: List[str],
+    limit: int,
+    since_days: Optional[int],
+    unseen_only: bool,
+) -> str:
+    mailbox_text = ",".join(selected_mailboxes) or "<none>"
+    return (
+        f"host={config.imap.host}:{config.imap.port} "
+        f"mailboxes={mailbox_text} "
+        f"readonly={config.imap.readonly} "
+        f"timeout={config.imap.timeout_seconds}s "
+        f"limit={limit} "
+        f"since_days={since_days if since_days is not None else 'default'} "
+        f"unseen_only={unseen_only}"
+    )
+
+
+def _iter_exception_chain(exc: BaseException) -> Iterable[BaseException]:
+    current: BaseException | None = exc
+    while current is not None:
+        yield current
+        current = current.__cause__ or current.__context__
+
+
+def _is_transient_imap_exception(exc: BaseException) -> bool:
+    transient_types = (
+        getattr(imaplib.IMAP4, "abort", RuntimeError),
+        socket.timeout,
+        TimeoutError,
+        ConnectionError,
+        EOFError,
+        ssl.SSLError,
+        OSError,
+    )
+    for item in _iter_exception_chain(exc):
+        if isinstance(item, transient_types):
+            return True
+        lowered = str(item).lower()
+        if any(marker in lowered for marker in IMAP_TRANSIENT_ERROR_MARKERS):
+            return True
+    return False
+
+
 def open_imap_connection(config: GmailImapConfig):
     validate_imap(config)
     connection = None
@@ -584,7 +703,12 @@ def open_imap_connection(config: GmailImapConfig):
                 connection.logout()
         except Exception:
             pass
-        raise MailError(f"IMAP connection failed: {type(exc).__name__}: {exc}") from exc
+        raise MailError(
+            "IMAP connection failed to "
+            f"{config.imap.host}:{config.imap.port} "
+            f"(ssl={config.imap.use_ssl}, timeout={config.imap.timeout_seconds}s): "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
     finally:
         socket.setdefaulttimeout(previous_timeout)
     return connection
@@ -620,7 +744,13 @@ def open_smtp_connection(config: GmailImapConfig):
                 client.quit()
         except Exception:
             pass
-        raise MailError(f"SMTP connection failed: {type(exc).__name__}: {exc}") from exc
+        raise MailError(
+            "SMTP connection failed to "
+            f"{config.smtp.host}:{config.smtp.port} "
+            f"(ssl={config.smtp.use_ssl}, starttls={config.smtp.starttls}, "
+            f"timeout={config.smtp.timeout_seconds}s): "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
     return client
 
 
