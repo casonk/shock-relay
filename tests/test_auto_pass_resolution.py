@@ -91,6 +91,27 @@ class ShockRelayAutoPassTests(unittest.TestCase):
         )
         self.assertEqual(recorder.resolve_calls[0].attrs_map, {"value": "password"})
 
+    def test_gmail_keepass_non_lookup_error_becomes_config_error(self) -> None:
+        recorder = AutoPassRecorder()
+        recorder.add_response(
+            "example-account#imap",
+            recorder.keepass_error("database is locked"),
+        )
+
+        with AutoPassPatch(recorder):
+            with self.assertRaises(self.gmail_common.ConfigError) as ctx:
+                self.gmail_common._resolve_keepass_value(
+                    "example-account#imap",
+                    "password",
+                    "infra",
+                )
+
+        message = str(ctx.exception)
+        self.assertIn("KeePassXC resolution failed", message)
+        self.assertIn("example-account#imap", message)
+        self.assertIn("password", message)
+        self.assertIn("infra", message)
+
 
 if __name__ == "__main__":
     unittest.main()
