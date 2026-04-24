@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from email.message import EmailMessage
+import imaplib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,6 +31,55 @@ class _DummySmtpClient:
         self.message = message
         self.from_addr = from_addr
         self.to_addrs = list(to_addrs)
+
+
+class _DummyImapClient:
+    def __init__(
+        self,
+        *,
+        select_result=("OK", [b"1"]),
+        search_result=("OK", [b"17"]),
+        fetch_result=None,
+    ) -> None:
+        self.select_result = select_result
+        self.search_result = search_result
+        self.fetch_result = fetch_result or (
+            "OK",
+            [(b"17 (RFC822 {1})", self._message_bytes())],
+        )
+
+    def __enter__(self) -> _DummyImapClient:
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        return False
+
+    def select(self, mailbox, readonly=True):
+        if isinstance(self.select_result, BaseException):
+            raise self.select_result
+        return self.select_result
+
+    def uid(self, command, *args):
+        if command == "search":
+            if isinstance(self.search_result, BaseException):
+                raise self.search_result
+            return self.search_result
+        if command == "fetch":
+            if isinstance(self.fetch_result, BaseException):
+                raise self.fetch_result
+            return self.fetch_result
+        raise AssertionError(f"unexpected IMAP uid command: {command}")
+
+    @staticmethod
+    def _message_bytes() -> bytes:
+        message = EmailMessage()
+        message["From"] = "sender@example.com"
+        message["To"] = "me@example.com"
+        message["Subject"] = "subject"
+        message["Date"] = "Fri, 10 Apr 2026 18:10:00 +0000"
+        message["Message-ID"] = "<msg@example.com>"
+        message.set_content("body")
+        return message.as_bytes()
 
 
 class ShockRelayGmailHeaderTests(unittest.TestCase):
@@ -139,6 +189,49 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
         self.assertEqual(normalized["headers"]["X-Portfolio-Service"], "intake")
         self.assertEqual(normalized["headers"]["X-Crew-Chief-Intent"], "notify")
         self.assertEqual(normalized["text"], "Receipt processed")
+
+    def test_list_messages_retries_transient_imap_abort_and_succeeds(self) -> None:
+        first = _DummyImapClient(
+            select_result=imaplib.IMAP4.abort("command: EXAMINE => System Error")
+        )
+        second = _DummyImapClient()
+        with (
+            patch.object(
+                self.gmail_common,
+                "open_imap_connection",
+                side_effect=[first, second],
+            ) as open_mock,
+            patch.object(self.gmail_common.time, "sleep") as sleep_mock,
+        ):
+            payload = self.gmail_common.list_messages(self._config(), limit=1)
+
+        self.assertEqual(len(payload["messages"]), 1)
+        self.assertEqual(open_mock.call_count, 2)
+        sleep_mock.assert_called_once()
+
+    def test_list_messages_reports_context_after_retry_exhaustion(self) -> None:
+        transient = imaplib.IMAP4.abort("command: UID => System Error")
+        failing_clients = [
+            _DummyImapClient(search_result=transient),
+            _DummyImapClient(search_result=transient),
+            _DummyImapClient(search_result=transient),
+        ]
+        with (
+            patch.object(
+                self.gmail_common,
+                "open_imap_connection",
+                side_effect=failing_clients,
+            ),
+            patch.object(self.gmail_common.time, "sleep"),
+        ):
+            with self.assertRaises(self.gmail_common.MailError) as ctx:
+                self.gmail_common.list_messages(self._config(), limit=1)
+
+        message = str(ctx.exception)
+        self.assertIn("after 3 attempt(s)", message)
+        self.assertIn("host=imap.gmail.com:993", message)
+        self.assertIn("mailboxes=INBOX", message)
+        self.assertIn("UID => System Error", message)
 
 
 if __name__ == "__main__":

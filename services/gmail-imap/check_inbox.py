@@ -3,6 +3,7 @@ import argparse
 import json
 import sys
 import time
+import traceback
 
 from common import (
     ConfigError,
@@ -102,6 +103,10 @@ def main() -> int:
             return 2
         except MailError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        except Exception as exc:
+            print(f"ERROR: unexpected {type(exc).__name__}: {exc}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
             return 1
 
         if payload.get("messages") or args.wait <= 0 or time.monotonic() >= deadline:
