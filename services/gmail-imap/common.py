@@ -562,7 +562,7 @@ def test_imap_connection(
     selected_mailbox = mailbox or config.imap.mailboxes[0]
     try:
         with open_imap_connection(config) as conn:
-            status, data = conn.select(selected_mailbox, readonly=True)
+            status, data = select_mailbox(conn, selected_mailbox, readonly=True)
             if status != "OK":
                 raise MailError(
                     f"IMAP mailbox select failed: {selected_mailbox} ({status})"
@@ -674,7 +674,7 @@ def _list_messages_once(
     with open_imap_connection(config) as conn:
         for mailbox in selected_mailboxes:
             try:
-                status, _ = conn.select(mailbox, readonly=config.imap.readonly)
+                status, _ = select_mailbox(conn, mailbox, readonly=config.imap.readonly)
             except Exception as exc:
                 raise MailError(
                     f"IMAP mailbox select failed in {mailbox}: {type(exc).__name__}: {exc}"
@@ -758,6 +758,34 @@ def parse_special_use_mailboxes(data: Any, special_use: str) -> List[str]:
     return normalize_optional_mailboxes(results)
 
 
+def _mailbox_select_candidates(mailbox: str) -> List[str]:
+    cleaned = str(mailbox or "").strip()
+    if not cleaned:
+        return []
+    candidates = [cleaned]
+    if " " in cleaned and not cleaned.startswith('"'):
+        candidates.append(f'"{cleaned}"')
+    return candidates
+
+
+def select_mailbox(conn: Any, mailbox: str, *, readonly: bool) -> Any:
+    last_status = "NO"
+    last_data: Any = []
+    last_exception: Exception | None = None
+    for candidate in _mailbox_select_candidates(mailbox):
+        try:
+            status, data = conn.select(candidate, readonly=readonly)
+        except Exception as exc:
+            last_exception = exc
+            continue
+        if status == "OK":
+            return status, data
+        last_status, last_data = status, data
+    if last_exception is not None:
+        raise last_exception
+    return last_status, last_data
+
+
 def find_message_in_mailboxes(
     conn: Any,
     mailboxes: List[str],
@@ -768,7 +796,7 @@ def find_message_in_mailboxes(
     canonical_message_id = normalize_message_id_header(message_id)
     for mailbox in mailboxes:
         try:
-            status, _ = conn.select(mailbox, readonly=True)
+            status, _ = select_mailbox(conn, mailbox, readonly=True)
         except Exception as exc:
             raise MailError(
                 f"IMAP sent-mail select failed in {mailbox}: {type(exc).__name__}: {exc}"

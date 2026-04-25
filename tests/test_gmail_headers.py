@@ -126,6 +126,24 @@ class _VerifyImapClient:
         raise AssertionError(f"unexpected IMAP uid command: {command}")
 
 
+class _QuotedMailboxVerifyImapClient(_VerifyImapClient):
+    def select(self, mailbox, readonly=True):
+        normalized_mailbox = (
+            mailbox[1:-1]
+            if mailbox.startswith('"') and mailbox.endswith('"')
+            else mailbox
+        )
+        self.selected_mailbox = normalized_mailbox
+        if " " in mailbox and not mailbox.startswith('"'):
+            return ("NO", [b"quote required"])
+        if normalized_mailbox not in self.messages_by_mailbox:
+            return ("NO", [b"missing"])
+        return (
+            "OK",
+            [str(len(self.messages_by_mailbox[normalized_mailbox])).encode("utf-8")],
+        )
+
+
 class ShockRelayGmailHeaderTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -290,6 +308,36 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
         self.assertEqual(payload["delivery"]["attempts"], 2)
         self.assertEqual(open_imap_mock.call_count, 2)
         sleep_mock.assert_called_once_with(2)
+
+    def test_send_email_verification_quotes_mailbox_names_with_spaces(self) -> None:
+        client = _DummySmtpClient()
+        verify_client = _QuotedMailboxVerifyImapClient(
+            messages_by_mailbox={
+                "[Gmail]/Sent Mail": [
+                    (17, self._build_message_bytes(message_id="<quoted@example.com>"))
+                ]
+            }
+        )
+        with (
+            patch.object(
+                self.gmail_common, "make_msgid", return_value="<quoted@example.com>"
+            ),
+            patch.object(
+                self.gmail_common, "open_smtp_connection", return_value=client
+            ),
+            patch.object(
+                self.gmail_common, "open_imap_connection", return_value=verify_client
+            ),
+        ):
+            payload = self.gmail_common.send_email(
+                self._config(),
+                to_addresses=["dest@example.com"],
+                subject="subject",
+                body="body",
+            )
+
+        self.assertTrue(payload["delivery"]["verified"])
+        self.assertEqual(payload["delivery"]["mailbox"], "[Gmail]/Sent Mail")
 
     def test_normalize_message_exposes_headers(self) -> None:
         message = EmailMessage()
