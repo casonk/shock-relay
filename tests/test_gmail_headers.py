@@ -84,6 +84,22 @@ class _DummyImapClient:
         return message.as_bytes()
 
 
+class _LogoutAbortImapClient:
+    def __init__(self) -> None:
+        self.logged_out = False
+        self.shutdown_called = False
+
+    def login(self, username, password):
+        return ("OK", [b"Logged in"])
+
+    def logout(self):
+        self.logged_out = True
+        raise imaplib.IMAP4.abort("socket error: EOF occurred in violation of protocol")
+
+    def shutdown(self):
+        self.shutdown_called = True
+
+
 class _VerifyImapClient:
     def __init__(
         self,
@@ -254,6 +270,15 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
         self.assertEqual(client.message["X-Portfolio-Service"], "crew-chief")
         self.assertEqual(client.message["X-Crew-Chief-Intent"], "response")
         self.assertEqual(client.to_addrs, ["dest@example.com"])
+
+    def test_open_imap_connection_suppresses_logout_abort(self) -> None:
+        client = _LogoutAbortImapClient()
+        with patch.object(self.gmail_common.imaplib, "IMAP4_SSL", return_value=client):
+            with self.gmail_common.open_imap_connection(self._config()) as conn:
+                self.assertIs(conn, client)
+
+        self.assertTrue(client.logged_out)
+        self.assertTrue(client.shutdown_called)
 
     def test_send_email_raises_for_rejected_recipients(self) -> None:
         client = _DummySmtpClient(
