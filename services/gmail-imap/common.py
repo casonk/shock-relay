@@ -7,6 +7,7 @@ import socket
 import smtplib
 import ssl
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from email import message_from_bytes
 from email.header import decode_header, make_header
@@ -892,6 +893,17 @@ def _is_transient_imap_exception(exc: BaseException) -> bool:
     return False
 
 
+def _shutdown_imap_connection(connection: Any) -> None:
+    try:
+        connection.logout()
+    except Exception:
+        try:
+            connection.shutdown()
+        except Exception:
+            pass
+
+
+@contextmanager
 def open_imap_connection(config: GmailImapConfig):
     validate_imap(config)
     connection = None
@@ -932,18 +944,12 @@ def open_imap_connection(config: GmailImapConfig):
         if status != "OK":
             raise MailError(f"IMAP login failed: {status}")
     except MailError:
-        try:
-            if connection is not None:
-                connection.logout()
-        except Exception:
-            pass
+        if connection is not None:
+            _shutdown_imap_connection(connection)
         raise
     except Exception as exc:
-        try:
-            if connection is not None:
-                connection.logout()
-        except Exception:
-            pass
+        if connection is not None:
+            _shutdown_imap_connection(connection)
         raise MailError(
             "IMAP connection failed to "
             f"{config.imap.host}:{config.imap.port} "
@@ -952,7 +958,11 @@ def open_imap_connection(config: GmailImapConfig):
         ) from exc
     finally:
         socket.setdefaulttimeout(previous_timeout)
-    return connection
+    try:
+        yield connection
+    finally:
+        if connection is not None:
+            _shutdown_imap_connection(connection)
 
 
 def open_smtp_connection(config: GmailImapConfig):
