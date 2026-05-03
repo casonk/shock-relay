@@ -6,6 +6,7 @@ skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
 rectangle ".github/workflows/ci.yml\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
+rectangle ".github/workflows/secret-scan.yml\n2 detected tools" as source_github_workflows_secret_scan_yml #E0F2FE
 rectangle "scripts/run_tachometer_profile.sh\n3 detected tools" as source_scripts_run_tachometer_profile_sh #E0F2FE
 rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
 rectangle "services/signal-cli/send_message.sh\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
@@ -53,6 +54,7 @@ cloud "depth++" as tool_depth_2 #FEF3C7
 cloud "depth--" as tool_depth_3 #FEF3C7
 cloud "end" as tool_end #FEF3C7
 cloud "full_key" as tool_full_key #FEF3C7
+cloud "gitleaks/gitleaks-action" as tool_gitleaks_gitleaks_action #FEF3C7
 cloud "head" as tool_head #FEF3C7
 cloud "i" as tool_i #FEF3C7
 cloud "in_double" as tool_in_double #FEF3C7
@@ -108,6 +110,8 @@ source_github_workflows_ci_yml --> tool_apt_get
 source_github_workflows_ci_yml --> tool_compileall
 source_github_workflows_ci_yml --> tool_services
 source_github_workflows_ci_yml --> tool_xargs
+source_github_workflows_secret_scan_yml --> tool_actions_checkout
+source_github_workflows_secret_scan_yml --> tool_gitleaks_gitleaks_action
 source_scripts_run_tachometer_profile_sh --> tool_run
 source_scripts_run_tachometer_profile_sh --> tool_summarize
 source_scripts_run_tachometer_profile_sh --> tool_tachometer
@@ -287,7 +291,7 @@ source_services_whatsapp_test_send_receive_confirm_sh --> tool_sleep
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_config
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
 note as toolingGraphSummary
-Scanned 17 tooling entrypoints.
-Detected 80 third-party tools.
+Scanned 18 tooling entrypoints.
+Detected 81 third-party tools.
 end note
 @enduml
