@@ -97,7 +97,10 @@ def drain(dry_run: bool = False, verbose: bool = False) -> int:
         service = entry["service"]
         script = SERVICE_SCRIPTS.get(service)
         if script is None or not script.exists():
-            print(f"  [SKIP] Unknown service {service!r} — keeping in queue", file=sys.stderr)
+            print(
+                f"  [SKIP] Unknown service {service!r} — keeping in queue",
+                file=sys.stderr,
+            )
             remaining.append(entry)
             continue
 
@@ -142,9 +145,17 @@ def drain(dry_run: bool = False, verbose: bool = False) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be sent without actually sending.")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Show per-message detail.")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be sent without actually sending.",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show per-message detail."
+    )
     args = parser.parse_args()
     return drain(dry_run=args.dry_run, verbose=args.verbose)
 
