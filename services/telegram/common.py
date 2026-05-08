@@ -19,6 +19,12 @@ class GatewayError(RuntimeError):
     pass
 
 
+class NetworkError(GatewayError):
+    """Raised when a send fails due to network connectivity, not an API error."""
+
+    pass
+
+
 @dataclass
 class HttpResponse:
     status_code: int
@@ -352,7 +358,7 @@ def request_json(
         message = f"HTTP {exc.code}: {body.strip() or exc.reason}"
         raise GatewayError(message) from exc
     except urllib.error.URLError as exc:
-        raise GatewayError(f"Request failed: {exc.reason}") from exc
+        raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
 def build_ssl_context(

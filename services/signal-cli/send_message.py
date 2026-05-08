@@ -4,6 +4,11 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from offline_queue import enqueue  # noqa: E402
+
 from common import (
     ConfigError,
     build_message_with_metadata,
@@ -51,15 +56,52 @@ def main() -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
+    _SIGNAL_NETWORK_MARKERS = (
+        "network is unreachable",
+        "connection refused",
+        "connection timed out",
+        "name or service not known",
+        "unknownhostexception",
+        "connectexception",
+        "failed to connect",
+        "no route to host",
+        "temporaryfailure",
+    )
+
     cmd = ["signal-cli", "-a", account]
     if bus_name:
         cmd.extend(["--bus-name", bus_name])
     cmd.extend(["send", "-m", message, args.recipient])
     try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"signal-cli failed with exit code {e.returncode}", file=sys.stderr)
-        return e.returncode
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.stderr:
+            sys.stderr.write(result.stderr)
+        if result.returncode != 0:
+            stderr_lower = result.stderr.lower()
+            is_network = any(m in stderr_lower for m in _SIGNAL_NETWORK_MARKERS)
+            if is_network and not os.environ.get("SHOCK_RELAY_NO_QUEUE"):
+                payload = {
+                    "recipient": args.recipient,
+                    "message": args.message,
+                    "config": config_path,
+                }
+                if args.meta:
+                    payload["meta"] = args.meta
+                entry_id = enqueue("signal", payload)
+                print(
+                    f"Offline: message queued for delivery when back online (id: {entry_id})",
+                    file=sys.stderr,
+                )
+                return 0
+            print(
+                f"signal-cli failed with exit code {result.returncode}", file=sys.stderr
+            )
+            return result.returncode
+    except FileNotFoundError:
+        print("signal-cli not found in PATH", file=sys.stderr)
+        return 1
 
     return 0
 

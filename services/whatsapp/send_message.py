@@ -3,9 +3,15 @@ import argparse
 import os
 import sys
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from offline_queue import enqueue  # noqa: E402
+
 from common import (
     ConfigError,
     GatewayError,
+    NetworkError,
     default_config_path,
     load_config,
     send_message,
@@ -38,6 +44,23 @@ def main() -> int:
     except ConfigError as exc:
         print(str(exc), file=sys.stderr)
         return 2
+    except NetworkError as exc:
+        if os.environ.get("SHOCK_RELAY_NO_QUEUE"):
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        entry_id = enqueue(
+            "whatsapp",
+            {
+                "recipient": args.recipient,
+                "message": args.message,
+                "config": args.config,
+            },
+        )
+        print(
+            f"Offline: message queued for delivery when back online (id: {entry_id})",
+            file=sys.stderr,
+        )
+        return 0
     except GatewayError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
