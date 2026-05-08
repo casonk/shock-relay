@@ -26,6 +26,12 @@ class MailError(RuntimeError):
     pass
 
 
+class NetworkMailError(MailError):
+    """Raised when a send fails due to network connectivity."""
+
+    pass
+
+
 @dataclass
 class TlsSettings:
     ca_cert_path: str
@@ -461,6 +467,10 @@ def send_email(
     except MailError:
         raise
     except Exception as exc:
+        if _is_transient_imap_exception(exc):
+            raise NetworkMailError(
+                f"SMTP send failed (network): {type(exc).__name__}: {exc}"
+            ) from exc
         raise MailError(f"SMTP send failed: {type(exc).__name__}: {exc}") from exc
     refused_recipients = refused_recipients or {}
     if refused_recipients:

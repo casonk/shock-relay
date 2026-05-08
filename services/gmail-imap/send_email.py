@@ -5,9 +5,15 @@ import os
 import sys
 import traceback
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from offline_queue import enqueue  # noqa: E402
+
 from common import (
     ConfigError,
     MailError,
+    NetworkMailError,
     default_config_path,
     load_config,
     parse_custom_header_args,
@@ -67,6 +73,28 @@ def main() -> int:
     except ConfigError as exc:
         print(str(exc), file=sys.stderr)
         return 2
+    except NetworkMailError as exc:
+        if os.environ.get("SHOCK_RELAY_NO_QUEUE"):
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        payload = {
+            "to_address": args.to_address,
+            "subject": args.subject,
+            "body": args.body,
+            "config": args.config,
+        }
+        if args.cc:
+            payload["cc"] = args.cc
+        if args.bcc:
+            payload["bcc"] = args.bcc
+        if args.header:
+            payload["header"] = args.header
+        entry_id = enqueue("gmail", payload)
+        print(
+            f"Offline: message queued for delivery when back online (id: {entry_id})",
+            file=sys.stderr,
+        )
+        return 0
     except MailError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

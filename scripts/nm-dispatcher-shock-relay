@@ -1,0 +1,26 @@
+#!/bin/bash
+# NetworkManager dispatcher: drain shock-relay offline queue when network comes up.
+#
+# Install:
+#   sudo cp scripts/nm-dispatcher-shock-relay /etc/NetworkManager/dispatcher.d/50-shock-relay-drain
+#   sudo chmod 755 /etc/NetworkManager/dispatcher.d/50-shock-relay-drain
+#
+# The SHOCK_RELAY_ROOT env var must be set, or edit the path below.
+
+INTERFACE="$1"
+STATUS="$2"
+
+[ "$STATUS" = "up" ] || exit 0
+
+SHOCK_RELAY_ROOT="${SHOCK_RELAY_ROOT:-/mnt/4tb-m2/git/util-repos/shock-relay}"
+DRAIN_SCRIPT="$SHOCK_RELAY_ROOT/scripts/drain_queue.py"
+
+[ -f "$DRAIN_SCRIPT" ] || exit 0
+
+# Run as the desktop user (NM dispatcher runs as root).
+DESKTOP_USER="$(logname 2>/dev/null || who | awk 'NR==1{print $1}')"
+if [ -n "$DESKTOP_USER" ]; then
+    su -l "$DESKTOP_USER" -c "python3 '$DRAIN_SCRIPT'" &
+else
+    python3 "$DRAIN_SCRIPT" &
+fi
