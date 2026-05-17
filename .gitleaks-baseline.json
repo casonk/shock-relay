@@ -1,1 +1,26 @@
-[]
+[
+ {
+  "RuleID": "portfolio-git-workspace-path",
+  "Description": "Hardcoded absolute path to local git workspace in config/code/scripts",
+  "StartLine": 15,
+  "EndLine": 15,
+  "StartColumn": 40,
+  "EndColumn": 55,
+  "Match": "/mnt/4tb-m2/git/",
+  "Secret": "/mnt/4tb-m2/git/",
+  "File": "scripts/nm-dispatcher-shock-relay",
+  "SymlinkFile": "",
+  "Commit": "abc041dc600e250bbc1b72fce82a87cf2deeac79",
+  "Link": "https://github.com/casonk/shock-relay/blob/abc041dc600e250bbc1b72fce82a87cf2deeac79/scripts/nm-dispatcher-shock-relay#L15",
+  "Entropy": 3.0778196,
+  "Author": "casonk",
+  "Email": "72440835+casonk@users.noreply.github.com",
+  "Date": "2026-05-08T18:25:32Z",
+  "Message": "feat: add offline queue and service hardening; add sudo boundary\n\nCo-Authored-By: Claude Sonnet 4.6 \u003cnoreply@anthropic.com\u003e",
+  "Tags": [
+   "local-path",
+   "machine-specific"
+  ],
+  "Fingerprint": "abc041dc600e250bbc1b72fce82a87cf2deeac79:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
+ }
+]
