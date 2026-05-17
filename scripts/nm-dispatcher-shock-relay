@@ -5,14 +5,15 @@
 #   sudo cp scripts/nm-dispatcher-shock-relay /etc/NetworkManager/dispatcher.d/50-shock-relay-drain
 #   sudo chmod 755 /etc/NetworkManager/dispatcher.d/50-shock-relay-drain
 #
-# The SHOCK_RELAY_ROOT env var must be set, or edit the path below.
+# Set SHOCK_RELAY_ROOT in the dispatcher environment or edit this local copy.
 
 INTERFACE="$1"
 STATUS="$2"
 
 [ "$STATUS" = "up" ] || exit 0
 
-SHOCK_RELAY_ROOT="${SHOCK_RELAY_ROOT:-/mnt/4tb-m2/git/util-repos/shock-relay}"
+SHOCK_RELAY_ROOT="${SHOCK_RELAY_ROOT:-}"
+[ -n "$SHOCK_RELAY_ROOT" ] || exit 0
 DRAIN_SCRIPT="$SHOCK_RELAY_ROOT/scripts/drain_queue.py"
 
 [ -f "$DRAIN_SCRIPT" ] || exit 0
