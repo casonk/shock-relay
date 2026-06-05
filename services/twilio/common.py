@@ -143,9 +143,7 @@ def load_config(config_path: str) -> TwilioConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise ConfigError(
-            f"ERROR: Cannot read config file: {config_path} ({exc})"
-        ) from exc
+        raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
 
     config = parse_simple_yaml(config_text)
     repo_auto_pass = _load_repo_auto_pass_config()
@@ -167,9 +165,7 @@ def load_config(config_path: str) -> TwilioConfig:
         twilio_cfg.get("from_phone_keepass_entry")
     ) or repo_auto_pass.get("from_phone_keepass_entry", "")
 
-    api_base_url = (
-        optional_string(twilio_cfg.get("api_base_url")) or "https://api.twilio.com"
-    )
+    api_base_url = optional_string(twilio_cfg.get("api_base_url")) or "https://api.twilio.com"
     if not api_base_url.lower().startswith("https://"):
         raise ConfigError("ERROR: twilio.api_base_url must use https://")
 
@@ -231,13 +227,9 @@ def load_config(config_path: str) -> TwilioConfig:
         default=30,
         field_name="twilio.timeout_seconds",
     )
-    sms_enabled = parse_bool(
-        sms_cfg.get("enabled"), default=True, field_name="twilio.sms.enabled"
-    )
+    sms_enabled = parse_bool(sms_cfg.get("enabled"), default=True, field_name="twilio.sms.enabled")
     if not sms_enabled:
-        raise ConfigError(
-            "ERROR: twilio.sms.enabled must be true to use the SMS scripts"
-        )
+        raise ConfigError("ERROR: twilio.sms.enabled must be true to use the SMS scripts")
 
     allowed_recipients = read_allowed_recipients(sms_cfg)
 
@@ -310,9 +302,7 @@ def get_messages_list(response: HttpResponse) -> List[Any]:
     return messages
 
 
-def normalize_messages_response(
-    messages: List[Any], limit: Optional[int] = None
-) -> Dict[str, Any]:
+def normalize_messages_response(messages: List[Any], limit: Optional[int] = None) -> Dict[str, Any]:
     normalized = [normalize_message(item) for item in messages]
     if limit is not None:
         normalized = normalized[:limit]
@@ -377,9 +367,7 @@ def request_twilio(
 
 
 def build_messages_url(config: TwilioConfig) -> str:
-    return (
-        f"{config.api_base_url}/2010-04-01/Accounts/{config.account_sid}/Messages.json"
-    )
+    return f"{config.api_base_url}/2010-04-01/Accounts/{config.account_sid}/Messages.json"
 
 
 def request_form(
@@ -411,9 +399,7 @@ def request_form(
     if method != "GET":
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-    request = urllib.request.Request(
-        url=request_url, data=data, headers=headers, method=method
-    )
+    request = urllib.request.Request(url=request_url, data=data, headers=headers, method=method)
     ssl_context = build_ssl_context(
         insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path
     )
@@ -439,9 +425,7 @@ def request_form(
         raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(
-    insecure_skip_verify: bool, ca_cert_path: str
-) -> Optional[ssl.SSLContext]:
+def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
     if insecure_skip_verify:
         return ssl._create_unverified_context()
     if ca_cert_path:
@@ -523,9 +507,7 @@ def read_scalar_list(value: Any, field_name: str) -> List[str]:
     for item in value:
         item_str = optional_string(item)
         if not item_str:
-            raise ConfigError(
-                f"ERROR: {field_name} must contain only non-empty scalars"
-            )
+            raise ConfigError(f"ERROR: {field_name} must contain only non-empty scalars")
         result.append(item_str)
     return result
 
@@ -563,9 +545,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(
-    env_name: Optional[str], field_name: str, required: bool = True
-) -> str:
+def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
@@ -578,9 +558,7 @@ def resolve_env_value(
     return ""
 
 
-def as_mapping(
-    value: Any, field_name: str, allow_empty: bool = False
-) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -610,9 +588,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
 
         if stripped.startswith("- "):
             if not isinstance(parent, list):
-                raise ConfigError(
-                    f"ERROR: Unexpected YAML list item near line {index + 1}"
-                )
+                raise ConfigError(f"ERROR: Unexpected YAML list item near line {index + 1}")
             parent.append(parse_scalar(stripped[2:].strip()))
             continue
 
@@ -643,9 +619,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(
-    lines: List[str], start_index: int, current_indent: int
-) -> Optional[type]:
+def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():
@@ -684,11 +658,7 @@ def parse_scalar(value_text: str) -> Any:
         return {}
     if re.fullmatch(r"-?\d+", value_text):
         return int(value_text)
-    if (
-        len(value_text) >= 2
-        and value_text[0] == value_text[-1]
-        and value_text[0] in ("'", '"')
-    ):
+    if len(value_text) >= 2 and value_text[0] == value_text[-1] and value_text[0] in ("'", '"'):
         if value_text[0] == "'":
             return value_text[1:-1].replace("''", "'")
         return bytes(value_text[1:-1], "utf-8").decode("unicode_escape")

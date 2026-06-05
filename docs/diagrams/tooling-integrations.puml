@@ -7,6 +7,7 @@ skinparam componentStyle rectangle
 skinparam linetype ortho
 rectangle ".github/workflows/ci.yml\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
 rectangle ".github/workflows/secret-scan.yml\n2 detected tools" as source_github_workflows_secret_scan_yml #E0F2FE
+rectangle "scripts/nm-dispatcher-shock-relay\n3 detected tools" as source_scripts_nm_dispatcher_shock_relay #E0F2FE
 rectangle "scripts/run_tachometer_profile.sh\n3 detected tools" as source_scripts_run_tachometer_profile_sh #E0F2FE
 rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
 rectangle "services/signal-cli/send_message.sh\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
@@ -88,6 +89,7 @@ cloud "services" as tool_services #FEF3C7
 cloud "signal-cli" as tool_signal_cli #FEF3C7
 cloud "signal_args+=(--bus-name" as tool_signal_args_bus_name #FEF3C7
 cloud "sleep" as tool_sleep #FEF3C7
+cloud "su" as tool_su #FEF3C7
 cloud "substr(s," as tool_substr_s #FEF3C7
 cloud "summarize" as tool_summarize #FEF3C7
 cloud "tachometer" as tool_tachometer #FEF3C7
@@ -102,6 +104,7 @@ cloud "twilio_send_sms_request" as tool_twilio_send_sms_request #FEF3C7
 cloud "value" as tool_value #FEF3C7
 cloud "whatsapp_load_config" as tool_whatsapp_load_config #FEF3C7
 cloud "whatsapp_send_message_request" as tool_whatsapp_send_message_request #FEF3C7
+cloud "who" as tool_who #FEF3C7
 cloud "xargs" as tool_xargs #FEF3C7
 cloud "yes" as tool_yes #FEF3C7
 source_github_workflows_ci_yml --> tool_actions_checkout
@@ -112,6 +115,9 @@ source_github_workflows_ci_yml --> tool_services
 source_github_workflows_ci_yml --> tool_xargs
 source_github_workflows_secret_scan_yml --> tool_actions_checkout
 source_github_workflows_secret_scan_yml --> tool_gitleaks_gitleaks_action
+source_scripts_nm_dispatcher_shock_relay --> tool_python3
+source_scripts_nm_dispatcher_shock_relay --> tool_su
+source_scripts_nm_dispatcher_shock_relay --> tool_who
 source_scripts_run_tachometer_profile_sh --> tool_run
 source_scripts_run_tachometer_profile_sh --> tool_summarize
 source_scripts_run_tachometer_profile_sh --> tool_tachometer
@@ -291,7 +297,7 @@ source_services_whatsapp_test_send_receive_confirm_sh --> tool_sleep
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_config
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
 note as toolingGraphSummary
-Scanned 18 tooling entrypoints.
-Detected 81 third-party tools.
+Scanned 19 tooling entrypoints.
+Detected 83 third-party tools.
 end note
 @enduml

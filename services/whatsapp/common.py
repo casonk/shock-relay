@@ -58,9 +58,7 @@ def load_config(config_path: str) -> WhatsAppConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise ConfigError(
-            f"ERROR: Cannot read config file: {config_path} ({exc})"
-        ) from exc
+        raise ConfigError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
 
     config = parse_simple_yaml(config_text)
     http_cfg = as_mapping(config.get("http"), "http")
@@ -220,17 +218,13 @@ def normalize_message(message: Any) -> Dict[str, Any]:
     nested_message = message.get("message")
     nested_text = ""
     if isinstance(nested_message, dict):
-        nested_text = (
-            first_non_empty(nested_message, ["text", "body", "message", "content"])
-            or ""
-        )
+        nested_text = first_non_empty(nested_message, ["text", "body", "message", "content"]) or ""
 
     return {
         "id": first_non_empty(message, ["id", "message_id", "sid", "wamid", "uuid"]),
         "from": first_non_empty(message, ["from", "sender", "source", "author"]),
         "to": first_non_empty(message, ["to", "recipient", "destination"]),
-        "text": first_non_empty(message, ["text", "message", "body", "content"])
-        or nested_text,
+        "text": first_non_empty(message, ["text", "message", "body", "content"]) or nested_text,
         "timestamp": first_non_empty(
             message, ["timestamp", "created_at", "received_at", "date", "time"]
         ),
@@ -277,9 +271,7 @@ def request_json(
         data = json.dumps(payload).encode("utf-8")
         request_headers.setdefault("Content-Type", "application/json")
 
-    request = urllib.request.Request(
-        url=url, data=data, headers=request_headers, method=method
-    )
+    request = urllib.request.Request(url=url, data=data, headers=request_headers, method=method)
     ssl_context = build_ssl_context(
         insecure_skip_verify=insecure_skip_verify, ca_cert_path=ca_cert_path
     )
@@ -305,9 +297,7 @@ def request_json(
         raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(
-    insecure_skip_verify: bool, ca_cert_path: str
-) -> Optional[ssl.SSLContext]:
+def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
     if insecure_skip_verify:
         return ssl._create_unverified_context()
     if ca_cert_path:
@@ -315,17 +305,13 @@ def build_ssl_context(
     return None
 
 
-def build_auth_headers(
-    http_cfg: Dict[str, Any], auth_cfg: Dict[str, Any]
-) -> Dict[str, str]:
+def build_auth_headers(http_cfg: Dict[str, Any], auth_cfg: Dict[str, Any]) -> Dict[str, str]:
     headers: Dict[str, str] = {}
 
     api_key_env = optional_string(http_cfg.get("api_key_env"))
     if api_key_env:
         header_name = optional_string(http_cfg.get("api_key_header")) or "X-API-Key"
-        headers[header_name] = resolve_env_value(
-            api_key_env, field_name="http.api_key_env"
-        )
+        headers[header_name] = resolve_env_value(api_key_env, field_name="http.api_key_env")
 
     bearer_token_env = optional_string(auth_cfg.get("bearer_token_env"))
     basic_username_env = optional_string(auth_cfg.get("basic_username_env"))
@@ -334,9 +320,7 @@ def build_auth_headers(
         raise ConfigError("ERROR: Configure either bearer auth or basic auth, not both")
 
     if bearer_token_env:
-        token = resolve_env_value(
-            bearer_token_env, field_name="http.auth.bearer_token_env"
-        )
+        token = resolve_env_value(bearer_token_env, field_name="http.auth.bearer_token_env")
         headers["Authorization"] = f"Bearer {token}"
 
     if basic_username_env or basic_password_env:
@@ -344,15 +328,9 @@ def build_auth_headers(
             raise ConfigError(
                 "ERROR: http.auth.basic_username_env and http.auth.basic_password_env must be set together"
             )
-        username = resolve_env_value(
-            basic_username_env, field_name="http.auth.basic_username_env"
-        )
-        password = resolve_env_value(
-            basic_password_env, field_name="http.auth.basic_password_env"
-        )
-        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode(
-            "ascii"
-        )
+        username = resolve_env_value(basic_username_env, field_name="http.auth.basic_username_env")
+        password = resolve_env_value(basic_password_env, field_name="http.auth.basic_password_env")
+        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
         headers["Authorization"] = f"Basic {token}"
 
     return headers
@@ -373,9 +351,7 @@ def validate_recipient(config: WhatsAppConfig, recipient: str) -> None:
 def read_allowed_recipients(messaging_cfg: Dict[str, Any]) -> List[str]:
     recipients: List[str] = []
     recipients.extend(
-        read_string_list(
-            messaging_cfg.get("allowed_recipients"), "messaging.allowed_recipients"
-        )
+        read_string_list(messaging_cfg.get("allowed_recipients"), "messaging.allowed_recipients")
     )
 
     env_names = read_string_list(
@@ -406,9 +382,7 @@ def split_recipient_values(value: str) -> List[str]:
     return [item.strip() for item in re.split(r"[\n,]+", value) if item.strip()]
 
 
-def resolve_env_value(
-    env_name: Optional[str], field_name: str, required: bool = True
-) -> str:
+def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
 
@@ -455,9 +429,7 @@ def canonical_party(value: str) -> str:
 def looks_like_message(value: Any) -> bool:
     if not isinstance(value, dict):
         return False
-    return any(
-        key in value for key in ("from", "to", "text", "message", "body", "content")
-    )
+    return any(key in value for key in ("from", "to", "text", "message", "body", "content"))
 
 
 def read_string_list(value: Any, field_name: str) -> List[str]:
@@ -470,9 +442,7 @@ def read_string_list(value: Any, field_name: str) -> List[str]:
     for item in value:
         item_str = optional_string(item)
         if not item_str:
-            raise ConfigError(
-                f"ERROR: {field_name} must contain only non-empty strings"
-            )
+            raise ConfigError(f"ERROR: {field_name} must contain only non-empty strings")
         result.append(item_str)
     return result
 
@@ -517,9 +487,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def as_mapping(
-    value: Any, field_name: str, allow_empty: bool = False
-) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -549,9 +517,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
 
         if stripped.startswith("- "):
             if not isinstance(parent, list):
-                raise ConfigError(
-                    f"ERROR: Unexpected YAML list item near line {index + 1}"
-                )
+                raise ConfigError(f"ERROR: Unexpected YAML list item near line {index + 1}")
             parent.append(parse_scalar(stripped[2:].strip()))
             continue
 
@@ -583,9 +549,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(
-    lines: List[str], start_index: int, current_indent: int
-) -> Optional[type]:
+def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():
@@ -625,11 +589,7 @@ def parse_scalar(value_text: str) -> Any:
         return {}
     if re.fullmatch(r"-?\d+", value_text):
         return int(value_text)
-    if (
-        len(value_text) >= 2
-        and value_text[0] == value_text[-1]
-        and value_text[0] in ("'", '"')
-    ):
+    if len(value_text) >= 2 and value_text[0] == value_text[-1] and value_text[0] in ("'", '"'):
         if value_text[0] == "'":
             return value_text[1:-1].replace("''", "'")
         return bytes(value_text[1:-1], "utf-8").decode("unicode_escape")

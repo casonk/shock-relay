@@ -1,0 +1,8 @@
+@startuml classes_shock-relay
+set namespaceSeparator none
+note as archilityPythonSurfaceNote
+Minimal class surface detected.
+Scanned 2 Python modules.
+See python-import-deps-scripts-drain_queue.svg, python-import-deps-offline_queue.svg for module-level imports.
+end note
+@enduml
