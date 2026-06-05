@@ -3,9 +3,7 @@ import argparse
 import os
 import sys
 
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from offline_queue import enqueue  # noqa: E402
 
 from common import (
@@ -19,9 +17,7 @@ from common import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Send a Telegram message via the Bot API."
-    )
+    parser = argparse.ArgumentParser(description="Send a Telegram message via the Bot API.")
     parser.add_argument("chat_id", help="Telegram chat ID or @channelusername")
     parser.add_argument(
         "message",

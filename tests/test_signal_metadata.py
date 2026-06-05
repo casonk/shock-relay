@@ -50,9 +50,7 @@ def test_build_message_with_metadata_prepends_block():
         "hello from automation",
         {"cc-service": "crew-chief", "cc-intent": "response"},
     )
-    assert message == (
-        "cc-service: crew-chief\ncc-intent: response\n\nhello from automation"
-    )
+    assert message == ("cc-service: crew-chief\ncc-intent: response\n\nhello from automation")
 
 
 def test_send_message_main_includes_metadata_block(monkeypatch, tmp_path):

@@ -153,9 +153,7 @@ def main() -> int:
         action="store_true",
         help="Show what would be sent without actually sending.",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show per-message detail."
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show per-message detail.")
     args = parser.parse_args()
     return drain(dry_run=args.dry_run, verbose=args.verbose)
 

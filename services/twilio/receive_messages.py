@@ -13,9 +13,7 @@ from common import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="List Twilio SMS messages via the REST API."
-    )
+    parser = argparse.ArgumentParser(description="List Twilio SMS messages via the REST API.")
     parser.add_argument(
         "--config",
         default=default_config_path(),

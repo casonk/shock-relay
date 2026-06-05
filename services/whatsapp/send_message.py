@@ -3,9 +3,7 @@ import argparse
 import os
 import sys
 
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from offline_queue import enqueue  # noqa: E402
 
 from common import (
@@ -22,9 +20,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Send a WhatsApp message via a configured HTTPS gateway."
     )
-    parser.add_argument(
-        "recipient", help="Recipient identifier (e.g. whatsapp:+15551234567)"
-    )
+    parser.add_argument("recipient", help="Recipient identifier (e.g. whatsapp:+15551234567)")
     parser.add_argument(
         "message",
         nargs="?",

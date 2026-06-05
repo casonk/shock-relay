@@ -15,9 +15,7 @@ def extract_account_and_bus_name(config_path: str) -> tuple[str, str | None]:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
     except OSError as exc:
-        raise RuntimeError(
-            f"ERROR: Cannot read config file: {config_path} ({exc})"
-        ) from exc
+        raise RuntimeError(f"ERROR: Cannot read config file: {config_path} ({exc})") from exc
 
     lines = config_text.splitlines()
     account = ""
@@ -27,9 +25,7 @@ def extract_account_and_bus_name(config_path: str) -> tuple[str, str | None]:
     base_indent = None
 
     def val_from_line(line: str) -> str:
-        match = re.match(
-            r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line
-        )
+        match = re.match(r"^\s*[^:]+:\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s#]+))\s*(?:#.*)?$", line)
         if not match:
             return ""
         return next(value for value in match.groups() if value is not None)
