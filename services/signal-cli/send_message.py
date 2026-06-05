@@ -4,9 +4,7 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from offline_queue import enqueue  # noqa: E402
 
 from common import (
@@ -18,9 +16,7 @@ from common import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Send a Signal message via signal-cli."
-    )
+    parser = argparse.ArgumentParser(description="Send a Signal message via signal-cli.")
     parser.add_argument("recipient", help="Recipient phone number (e.g. +15551234567)")
     parser.add_argument(
         "message",
@@ -46,9 +42,7 @@ def main() -> int:
     config_path = args.config
     try:
         account, bus_name = extract_account_and_bus_name(config_path)
-        message = build_message_with_metadata(
-            args.message, parse_metadata_args(args.meta)
-        )
+        message = build_message_with_metadata(args.message, parse_metadata_args(args.meta))
     except ConfigError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -95,9 +89,7 @@ def main() -> int:
                     file=sys.stderr,
                 )
                 return 0
-            print(
-                f"signal-cli failed with exit code {result.returncode}", file=sys.stderr
-            )
+            print(f"signal-cli failed with exit code {result.returncode}", file=sys.stderr)
             return result.returncode
     except FileNotFoundError:
         print("signal-cli not found in PATH", file=sys.stderr)

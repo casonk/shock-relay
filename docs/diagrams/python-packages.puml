@@ -1,0 +1,8 @@
+@startuml packages_shock-relay
+set namespaceSeparator none
+top to bottom direction
+skinparam componentStyle rectangle
+rectangle "offline_queue\n1 python file" as offline_queue
+rectangle "scripts.drain_queue\n1 python file" as scripts.drain_queue
+scripts.drain_queue --> offline_queue
+@enduml

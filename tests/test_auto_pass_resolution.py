@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DYNO_LAB_SRC = REPO_ROOT.parent / "dyno-lab" / "src"
-if str(DYNO_LAB_SRC) not in sys.path:
-    sys.path.insert(0, str(DYNO_LAB_SRC))
-
 from dyno_lab.auto_pass import AutoPassPatch, AutoPassRecorder
 from dyno_lab.module import load_module_by_path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ShockRelayAutoPassTests(unittest.TestCase):
@@ -48,9 +44,7 @@ class ShockRelayAutoPassTests(unittest.TestCase):
         self.assertEqual(resolved, "imap-secret")
         self.assertEqual(recorder.load_calls[0].profile, "infra")
         self.assertTrue(
-            str(recorder.load_calls[0].path).endswith(
-                "auto-pass/config/auto-pass.env.local"
-            )
+            str(recorder.load_calls[0].path).endswith("auto-pass/config/auto-pass.env.local")
         )
         self.assertEqual(
             [call.entry for call in recorder.resolve_calls],
@@ -81,9 +75,7 @@ class ShockRelayAutoPassTests(unittest.TestCase):
         self.assertEqual(resolved, "twilio-secret")
         self.assertEqual(recorder.load_calls[0].profile, "work")
         self.assertTrue(
-            str(recorder.load_calls[0].path).endswith(
-                "auto-pass/config/auto-pass.env.local"
-            )
+            str(recorder.load_calls[0].path).endswith("auto-pass/config/auto-pass.env.local")
         )
         self.assertEqual(
             [call.entry for call in recorder.resolve_calls],

@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-import sys
+import imaplib
 import unittest
 from email.message import EmailMessage
-import imaplib
 from pathlib import Path
 from unittest.mock import patch
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DYNO_LAB_SRC = REPO_ROOT.parent / "dyno-lab" / "src"
-if str(DYNO_LAB_SRC) not in sys.path:
-    sys.path.insert(0, str(DYNO_LAB_SRC))
-
 from dyno_lab.module import load_module_by_path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class _DummySmtpClient:
@@ -145,9 +141,7 @@ class _VerifyImapClient:
 class _QuotedMailboxVerifyImapClient(_VerifyImapClient):
     def select(self, mailbox, readonly=True):
         normalized_mailbox = (
-            mailbox[1:-1]
-            if mailbox.startswith('"') and mailbox.endswith('"')
-            else mailbox
+            mailbox[1:-1] if mailbox.startswith('"') and mailbox.endswith('"') else mailbox
         )
         self.selected_mailbox = normalized_mailbox
         if " " in mailbox and not mailbox.startswith('"'):
@@ -241,15 +235,9 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
             }
         )
         with (
-            patch.object(
-                self.gmail_common, "make_msgid", return_value="<verified@example.com>"
-            ),
-            patch.object(
-                self.gmail_common, "open_smtp_connection", return_value=client
-            ),
-            patch.object(
-                self.gmail_common, "open_imap_connection", return_value=verify_client
-            ),
+            patch.object(self.gmail_common, "make_msgid", return_value="<verified@example.com>"),
+            patch.object(self.gmail_common, "open_smtp_connection", return_value=client),
+            patch.object(self.gmail_common, "open_imap_connection", return_value=verify_client),
         ):
             payload = self.gmail_common.send_email(
                 self._config(),
@@ -281,12 +269,8 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
         self.assertTrue(client.shutdown_called)
 
     def test_send_email_raises_for_rejected_recipients(self) -> None:
-        client = _DummySmtpClient(
-            send_result={"dest@example.com": (550, b"Mailbox unavailable")}
-        )
-        with patch.object(
-            self.gmail_common, "open_smtp_connection", return_value=client
-        ):
+        client = _DummySmtpClient(send_result={"dest@example.com": (550, b"Mailbox unavailable")})
+        with patch.object(self.gmail_common, "open_smtp_connection", return_value=client):
             with self.assertRaises(self.gmail_common.MailError) as ctx:
                 self.gmail_common.send_email(
                     self._config(),
@@ -309,12 +293,8 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
             }
         )
         with (
-            patch.object(
-                self.gmail_common, "make_msgid", return_value="<retry@example.com>"
-            ),
-            patch.object(
-                self.gmail_common, "open_smtp_connection", return_value=client
-            ),
+            patch.object(self.gmail_common, "make_msgid", return_value="<retry@example.com>"),
+            patch.object(self.gmail_common, "open_smtp_connection", return_value=client),
             patch.object(
                 self.gmail_common,
                 "open_imap_connection",
@@ -344,15 +324,9 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
             }
         )
         with (
-            patch.object(
-                self.gmail_common, "make_msgid", return_value="<quoted@example.com>"
-            ),
-            patch.object(
-                self.gmail_common, "open_smtp_connection", return_value=client
-            ),
-            patch.object(
-                self.gmail_common, "open_imap_connection", return_value=verify_client
-            ),
+            patch.object(self.gmail_common, "make_msgid", return_value="<quoted@example.com>"),
+            patch.object(self.gmail_common, "open_smtp_connection", return_value=client),
+            patch.object(self.gmail_common, "open_imap_connection", return_value=verify_client),
         ):
             payload = self.gmail_common.send_email(
                 self._config(),
@@ -375,9 +349,7 @@ class ShockRelayGmailHeaderTests(unittest.TestCase):
         message["X-Crew-Chief-Intent"] = "notify"
         message.set_content("Receipt processed")
 
-        normalized = self.gmail_common.normalize_message(
-            "INBOX", 17, message.as_bytes()
-        )
+        normalized = self.gmail_common.normalize_message("INBOX", 17, message.as_bytes())
 
         self.assertEqual(normalized["headers"]["X-Portfolio-Service"], "intake")
         self.assertEqual(normalized["headers"]["X-Crew-Chief-Intent"], "notify")

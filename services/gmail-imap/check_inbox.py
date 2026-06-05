@@ -82,9 +82,7 @@ def main() -> int:
 
     deadline = time.monotonic() + max(0, args.wait)
     poll_interval = (
-        args.poll_interval
-        if args.poll_interval is not None
-        else config.imap.poll_interval_seconds
+        args.poll_interval if args.poll_interval is not None else config.imap.poll_interval_seconds
     )
 
     while True:
@@ -116,9 +114,7 @@ def main() -> int:
                 print(json.dumps(payload, sort_keys=True))
             if payload.get("messages") or args.wait <= 0:
                 return 0
-            print(
-                "ERROR: Timed out waiting for matching inbox messages.", file=sys.stderr
-            )
+            print("ERROR: Timed out waiting for matching inbox messages.", file=sys.stderr)
             return 1
 
         time.sleep(max(1.0, float(poll_interval)))
