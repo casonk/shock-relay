@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import configparser
+import contextlib
 import imaplib
 import os
 import re
-import socket
 import smtplib
+import socket
 import ssl
 import time
+from collections.abc import Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from email import message_from_bytes
@@ -15,7 +17,7 @@ from email.message import EmailMessage
 from email.policy import default as default_policy
 from email.utils import formatdate, make_msgid, parseaddr, parsedate_to_datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any
 
 
 class ConfigError(RuntimeError):
@@ -45,11 +47,11 @@ class ImapSettings:
     use_ssl: bool
     username: str
     password: str
-    mailboxes: List[str]
+    mailboxes: list[str]
     readonly: bool
     timeout_seconds: int
     poll_interval_seconds: int
-    search_charset: Optional[str]
+    search_charset: str | None
     tls: TlsSettings
 
 
@@ -63,13 +65,13 @@ class SmtpSettings:
     password: str
     from_address: str
     timeout_seconds: int
-    allowed_recipients: List[str]
+    allowed_recipients: list[str]
     tls: TlsSettings
     verify_delivery: bool
     verify_attempts: int
     verify_delay_seconds: int
     verify_recent_limit: int
-    verify_mailboxes: List[str]
+    verify_mailboxes: list[str]
 
 
 @dataclass
@@ -178,8 +180,10 @@ def _resolve_keepass_value(
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
-    from auto_pass.keepassxc import KeepassCommandError  # noqa: PLC0415
-    from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+    from auto_pass.keepassxc import (
+        KeepassCommandError,  # noqa: PLC0415
+        resolve_keepassxc_entry,  # noqa: PLC0415
+    )
 
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
@@ -416,13 +420,13 @@ def load_config(config_path: str) -> GmailImapConfig:
 
 def send_email(
     config: GmailImapConfig,
-    to_addresses: List[str],
+    to_addresses: list[str],
     subject: str,
     body: str,
-    cc_addresses: Optional[List[str]] = None,
-    bcc_addresses: Optional[List[str]] = None,
-    headers: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    cc_addresses: list[str] | None = None,
+    bcc_addresses: list[str] | None = None,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     validate_smtp(config)
     normalized_to = normalize_email_list(to_addresses)
     normalized_cc = normalize_email_list(cc_addresses or [])
@@ -463,10 +467,10 @@ def send_email(
     refused_recipients = refused_recipients or {}
     if refused_recipients:
         raise MailError(
-            "SMTP send rejected recipient(s): " f"{format_smtp_refusals(refused_recipients)}"
+            f"SMTP send rejected recipient(s): {format_smtp_refusals(refused_recipients)}"
         )
 
-    delivery: Dict[str, Any] = {"verified": False, "skipped": True}
+    delivery: dict[str, Any] = {"verified": False, "skipped": True}
     message_id = str(message.get("Message-ID") or "")
     if config.smtp.verify_delivery:
         delivery = verify_sent_delivery(config, message_id=message_id)
@@ -485,13 +489,13 @@ def send_email(
 
 def list_messages(
     config: GmailImapConfig,
-    mailboxes: Optional[List[str]] = None,
+    mailboxes: list[str] | None = None,
     limit: int = 20,
-    unseen_only: Optional[bool] = None,
-    from_contains: Optional[str] = None,
-    subject_contains: Optional[str] = None,
-    since_days: Optional[int] = None,
-) -> Dict[str, Any]:
+    unseen_only: bool | None = None,
+    from_contains: str | None = None,
+    subject_contains: str | None = None,
+    since_days: int | None = None,
+) -> dict[str, Any]:
     validate_imap(config)
     selected_mailboxes = normalize_mailboxes(mailboxes or config.imap.mailboxes)
     effective_unseen_only = config.filters.unseen_only if unseen_only is None else unseen_only
@@ -510,7 +514,7 @@ def list_messages(
         since_days=since_days,
         unseen_only=effective_unseen_only,
     )
-    messages: List[Dict[str, Any]] = []
+    messages: list[dict[str, Any]] = []
     last_error: BaseException | None = None
     for attempt in range(1, IMAP_TRANSIENT_RETRY_ATTEMPTS + 1):
         try:
@@ -547,7 +551,7 @@ def list_messages(
     }
 
 
-def test_imap_connection(config: GmailImapConfig, mailbox: Optional[str] = None) -> Dict[str, Any]:
+def test_imap_connection(config: GmailImapConfig, mailbox: str | None = None) -> dict[str, Any]:
     validate_imap(config)
     selected_mailbox = mailbox or config.imap.mailboxes[0]
     try:
@@ -568,7 +572,7 @@ def test_imap_connection(config: GmailImapConfig, mailbox: Optional[str] = None)
     }
 
 
-def test_smtp_connection(config: GmailImapConfig) -> Dict[str, Any]:
+def test_smtp_connection(config: GmailImapConfig) -> dict[str, Any]:
     validate_smtp(config)
     try:
         with open_smtp_connection(config) as client:
@@ -588,7 +592,7 @@ def test_smtp_connection(config: GmailImapConfig) -> Dict[str, Any]:
     }
 
 
-def verify_sent_delivery(config: GmailImapConfig, message_id: str) -> Dict[str, Any]:
+def verify_sent_delivery(config: GmailImapConfig, message_id: str) -> dict[str, Any]:
     validate_imap(config)
     canonical_message_id = normalize_message_id_header(message_id)
     if not canonical_message_id:
@@ -645,14 +649,14 @@ def verify_sent_delivery(config: GmailImapConfig, message_id: str) -> Dict[str, 
 
 def _list_messages_once(
     config: GmailImapConfig,
-    selected_mailboxes: List[str],
+    selected_mailboxes: list[str],
     effective_unseen_only: bool,
     effective_from_contains: str,
     effective_subject_contains: str,
-    since_days: Optional[int],
+    since_days: int | None,
     effective_limit: int,
-) -> List[Dict[str, Any]]:
-    messages: List[Dict[str, Any]] = []
+) -> list[dict[str, Any]]:
+    messages: list[dict[str, Any]] = []
     with open_imap_connection(config) as conn:
         for mailbox in selected_mailboxes:
             try:
@@ -688,8 +692,7 @@ def _list_messages_once(
                     status, msg_data = conn.uid("fetch", str(uid), "(RFC822)")
                 except Exception as exc:
                     raise MailError(
-                        f"IMAP UID fetch failed for {uid} in {mailbox}: "
-                        f"{type(exc).__name__}: {exc}"
+                        f"IMAP UID fetch failed for {uid} in {mailbox}: {type(exc).__name__}: {exc}"
                     ) from exc
                 if status != "OK":
                     raise MailError(
@@ -702,8 +705,8 @@ def _list_messages_once(
     return messages
 
 
-def resolve_sent_mailboxes(conn: Any, configured: List[str]) -> List[str]:
-    discovered: List[str] = []
+def resolve_sent_mailboxes(conn: Any, configured: list[str]) -> list[str]:
+    discovered: list[str] = []
     try:
         status, data = conn.list()
     except Exception:
@@ -715,8 +718,8 @@ def resolve_sent_mailboxes(conn: Any, configured: List[str]) -> List[str]:
     )
 
 
-def parse_special_use_mailboxes(data: Any, special_use: str) -> List[str]:
-    results: List[str] = []
+def parse_special_use_mailboxes(data: Any, special_use: str) -> list[str]:
+    results: list[str] = []
     for item in data or []:
         text = item.decode("utf-8", errors="replace") if isinstance(item, bytes) else str(item)
         match = re.match(r'^\((?P<flags>[^)]*)\)\s+"[^"]*"\s+(?P<mailbox>.+)$', text)
@@ -732,7 +735,7 @@ def parse_special_use_mailboxes(data: Any, special_use: str) -> List[str]:
     return normalize_optional_mailboxes(results)
 
 
-def _mailbox_select_candidates(mailbox: str) -> List[str]:
+def _mailbox_select_candidates(mailbox: str) -> list[str]:
     cleaned = str(mailbox or "").strip()
     if not cleaned:
         return []
@@ -762,11 +765,11 @@ def select_mailbox(conn: Any, mailbox: str, *, readonly: bool) -> Any:
 
 def find_message_in_mailboxes(
     conn: Any,
-    mailboxes: List[str],
+    mailboxes: list[str],
     message_id: str,
     recent_limit: int,
-    search_charset: Optional[str],
-) -> Optional[Dict[str, Any]]:
+    search_charset: str | None,
+) -> dict[str, Any] | None:
     canonical_message_id = normalize_message_id_header(message_id)
     for mailbox in mailboxes:
         try:
@@ -818,9 +821,9 @@ def find_message_in_mailboxes(
 
 def _format_imap_context(
     config: GmailImapConfig,
-    selected_mailboxes: List[str],
+    selected_mailboxes: list[str],
     limit: int,
-    since_days: Optional[int],
+    since_days: int | None,
     unseen_only: bool,
 ) -> str:
     mailbox_text = ",".join(selected_mailboxes) or "<none>"
@@ -865,10 +868,8 @@ def _shutdown_imap_connection(connection: Any) -> None:
     try:
         connection.logout()
     except Exception:
-        try:
+        with contextlib.suppress(Exception):
             connection.shutdown()
-        except Exception:
-            pass
 
 
 @contextmanager
@@ -973,7 +974,7 @@ def open_smtp_connection(config: GmailImapConfig):
     return client
 
 
-def normalize_message(mailbox: str, uid: int, payload_bytes: bytes) -> Dict[str, Any]:
+def normalize_message(mailbox: str, uid: int, payload_bytes: bytes) -> dict[str, Any]:
     message = message_from_bytes(payload_bytes, policy=default_policy)
     subject = decode_mime_header(message.get("Subject"))
     sender = decode_mime_header(message.get("From"))
@@ -1000,14 +1001,14 @@ def normalize_message(mailbox: str, uid: int, payload_bytes: bytes) -> Dict[str,
     }
 
 
-def extract_attachments(payload_bytes: bytes) -> List[Tuple[str, str, bytes]]:
+def extract_attachments(payload_bytes: bytes) -> list[tuple[str, str, bytes]]:
     """Return a list of (filename, content_type, data) for all MIME attachments.
 
     Only parts with ``Content-Disposition: attachment`` or an explicit filename
     are included.  Inline text/html body parts are excluded.
     """
     message = message_from_bytes(payload_bytes, policy=default_policy)
-    results: List[Tuple[str, str, bytes]] = []
+    results: list[tuple[str, str, bytes]] = []
     if not message.is_multipart():
         return results
     for part in message.walk():
@@ -1055,9 +1056,9 @@ def move_message(conn: Any, uid: int, dest_mailbox: str) -> None:
     conn.uid("store", str(uid), "+FLAGS", r"(\Deleted)")
 
 
-def extract_message_bodies(message: Any) -> Tuple[str, str]:
-    text_parts: List[str] = []
-    html_parts: List[str] = []
+def extract_message_bodies(message: Any) -> tuple[str, str]:
+    text_parts: list[str] = []
+    html_parts: list[str] = []
 
     if message.is_multipart():
         for part in message.walk():
@@ -1114,8 +1115,8 @@ def decode_mime_header(value: Any) -> str:
         return raw
 
 
-def normalize_message_headers(message: Any) -> Dict[str, str]:
-    headers: Dict[str, str] = {}
+def normalize_message_headers(message: Any) -> dict[str, str]:
+    headers: dict[str, str] = {}
     for name, value in message.items():
         decoded = decode_mime_header(value)
         existing = headers.get(name, "")
@@ -1126,8 +1127,8 @@ def normalize_message_headers(message: Any) -> Dict[str, str]:
     return headers
 
 
-def normalize_custom_headers(headers: Dict[str, Any]) -> Dict[str, str]:
-    normalized: Dict[str, str] = {}
+def normalize_custom_headers(headers: dict[str, Any]) -> dict[str, str]:
+    normalized: dict[str, str] = {}
     for name, value in headers.items():
         header_name = str(name or "").strip()
         header_value = str(value or "").strip()
@@ -1141,8 +1142,8 @@ def normalize_custom_headers(headers: Dict[str, Any]) -> Dict[str, str]:
     return normalized
 
 
-def parse_custom_header_args(values: Iterable[str]) -> Dict[str, str]:
-    headers: Dict[str, str] = {}
+def parse_custom_header_args(values: Iterable[str]) -> dict[str, str]:
+    headers: dict[str, str] = {}
     for raw_value in values:
         text = str(raw_value or "")
         if ":" not in text:
@@ -1152,7 +1153,7 @@ def parse_custom_header_args(values: Iterable[str]) -> Dict[str, str]:
     return headers
 
 
-def parse_date_epoch(value: str) -> Optional[int]:
+def parse_date_epoch(value: str) -> int | None:
     if not value:
         return None
     try:
@@ -1169,9 +1170,9 @@ def build_search_terms(
     unseen_only: bool = False,
     from_contains: str = "",
     subject_contains: str = "",
-    since_days: Optional[int] = None,
-) -> List[str]:
-    terms: List[str] = []
+    since_days: int | None = None,
+) -> list[str]:
+    terms: list[str] = []
     if unseen_only:
         terms.append("UNSEEN")
     if from_contains:
@@ -1188,14 +1189,14 @@ def build_search_terms(
     return terms
 
 
-def resolve_imap_mailboxes(imap_cfg: Dict[str, Any]) -> List[str]:
+def resolve_imap_mailboxes(imap_cfg: dict[str, Any]) -> list[str]:
     configured = read_scalar_list(imap_cfg.get("mailboxes"), "imap.mailboxes")
     mailbox = optional_string(imap_cfg.get("mailbox")) or "INBOX"
     return normalize_mailboxes([mailbox] + configured)
 
 
-def normalize_mailboxes(values: Iterable[str]) -> List[str]:
-    result: List[str] = []
+def normalize_mailboxes(values: Iterable[str]) -> list[str]:
+    result: list[str] = []
     seen = set()
     for value in values:
         mailbox = str(value or "").strip() or "INBOX"
@@ -1207,8 +1208,8 @@ def normalize_mailboxes(values: Iterable[str]) -> List[str]:
     return result or ["INBOX"]
 
 
-def normalize_optional_mailboxes(values: Iterable[str]) -> List[str]:
-    result: List[str] = []
+def normalize_optional_mailboxes(values: Iterable[str]) -> list[str]:
+    result: list[str] = []
     seen = set()
     for value in values:
         mailbox = str(value or "").strip()
@@ -1222,8 +1223,8 @@ def normalize_optional_mailboxes(values: Iterable[str]) -> List[str]:
     return result
 
 
-def normalize_email_list(values: Iterable[str]) -> List[str]:
-    result: List[str] = []
+def normalize_email_list(values: Iterable[str]) -> list[str]:
+    result: list[str] = []
     seen = set()
     for item in values:
         for candidate in split_values(str(item)):
@@ -1238,7 +1239,7 @@ def normalize_email_list(values: Iterable[str]) -> List[str]:
     return result
 
 
-def validate_recipients(config: GmailImapConfig, recipients: List[str]) -> None:
+def validate_recipients(config: GmailImapConfig, recipients: list[str]) -> None:
     if not config.smtp.allowed_recipients:
         return
     allowed = {canonical_email(item) for item in config.smtp.allowed_recipients}
@@ -1278,7 +1279,7 @@ def validate_smtp(config: GmailImapConfig) -> None:
         raise ConfigError("ERROR: Missing smtp.password or smtp.password_env in config.local.yaml")
 
 
-def load_tls_settings(tls_cfg: Dict[str, Any], prefix: str) -> TlsSettings:
+def load_tls_settings(tls_cfg: dict[str, Any], prefix: str) -> TlsSettings:
     insecure_skip_verify = parse_bool(
         tls_cfg.get("insecure_skip_verify"),
         default=False,
@@ -1301,16 +1302,19 @@ def load_tls_settings(tls_cfg: Dict[str, Any], prefix: str) -> TlsSettings:
     )
 
 
-def build_ssl_context(tls: TlsSettings) -> Optional[ssl.SSLContext]:
+def build_ssl_context(tls: TlsSettings) -> ssl.SSLContext | None:
     if tls.insecure_skip_verify:
-        return ssl._create_unverified_context()
+        raise ConfigError(
+            "insecure_skip_verify=true is not supported. "
+            "For private or self-signed gateways, set tls.ca_cert_path to your CA certificate instead."
+        )
     if tls.ca_cert_path:
         return ssl.create_default_context(cafile=tls.ca_cert_path)
     return None
 
 
-def format_smtp_refusals(refused_recipients: Dict[str, Any]) -> str:
-    parts: List[str] = []
+def format_smtp_refusals(refused_recipients: dict[str, Any]) -> str:
+    parts: list[str] = []
     for recipient, detail in refused_recipients.items():
         if isinstance(detail, tuple) and len(detail) >= 2:
             code = detail[0]
@@ -1344,10 +1348,10 @@ def extract_fetch_payload(msg_data: Any) -> bytes:
     return b""
 
 
-def parse_int_uid_list(data: Any) -> List[int]:
+def parse_int_uid_list(data: Any) -> list[int]:
     if not isinstance(data, list):
         return []
-    chunks: List[bytes] = []
+    chunks: list[bytes] = []
     for item in data:
         if isinstance(item, bytes):
             chunks.append(item)
@@ -1356,7 +1360,7 @@ def parse_int_uid_list(data: Any) -> List[int]:
     combined = b" ".join(chunks).strip()
     if not combined:
         return []
-    result: List[int] = []
+    result: list[int] = []
     for token in combined.split():
         token_text = token.decode("utf-8", errors="ignore")
         if re.fullmatch(r"\d+", token_text):
@@ -1364,7 +1368,7 @@ def parse_int_uid_list(data: Any) -> List[int]:
     return result
 
 
-def read_allowed_recipients(smtp_cfg: Dict[str, Any]) -> List[str]:
+def read_allowed_recipients(smtp_cfg: dict[str, Any]) -> list[str]:
     recipients = read_scalar_list(smtp_cfg.get("allowed_recipients"), "smtp.allowed_recipients")
     env_names = read_scalar_list(
         smtp_cfg.get("allowed_recipient_envs"), "smtp.allowed_recipient_envs"
@@ -1379,11 +1383,11 @@ def read_allowed_recipients(smtp_cfg: Dict[str, Any]) -> List[str]:
     return normalize_email_list(recipients)
 
 
-def split_values(value: str) -> List[str]:
+def split_values(value: str) -> list[str]:
     return [item.strip() for item in re.split(r"[\n,;]+", value) if item.strip()]
 
 
-def read_scalar_list(value: Any, field_name: str) -> List[str]:
+def read_scalar_list(value: Any, field_name: str) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -1431,7 +1435,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(env_name: str | None, field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
@@ -1444,7 +1448,7 @@ def resolve_env_value(env_name: Optional[str], field_name: str, required: bool =
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -1454,10 +1458,10 @@ def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[s
     return value
 
 
-def parse_simple_yaml(text: str) -> Dict[str, Any]:
+def parse_simple_yaml(text: str) -> dict[str, Any]:
     lines = text.splitlines()
-    root: Dict[str, Any] = {}
-    stack: List[Any] = [(-1, root)]
+    root: dict[str, Any] = {}
+    stack: list[Any] = [(-1, root)]
 
     for index, raw_line in enumerate(lines):
         line = strip_comment(raw_line).rstrip()
@@ -1505,7 +1509,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(lines: list[str], start_index: int, current_indent: int) -> type | None:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():

@@ -3,32 +3,15 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  python-checks:
+  python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11', '3.12']
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Compile Python service scripts
-        run: python -m compileall services
+    uses: casonk/.github/.github/workflows/python-ci.yml@main
+    with:
+      python-versions: '["3.11", "3.12"]'
+      run-pytest: false
 
-  shellcheck:
+  shell:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - name: Lint shell entrypoints
-        run: |
-          FILES=$(find services -name '*.sh' -not -path './.git/*')
-          if [ -n "$FILES" ]; then
-            echo "$FILES" | xargs shellcheck
-          else
-            echo 'No shell scripts found.'
-          fi
+    uses: casonk/.github/.github/workflows/shell-ci.yml@main
+    with:
+      run-tests: false
