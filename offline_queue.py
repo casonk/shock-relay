@@ -4,12 +4,14 @@
 Messages that fail due to network errors are stored here and retried by
 scripts/drain_queue.py once connectivity is restored.
 """
+
+import contextlib
 import json
 import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 def _queue_file() -> Path:
@@ -23,7 +25,7 @@ def _queue_file() -> Path:
     return base / "queue.jsonl"
 
 
-def enqueue(service: str, payload: Dict[str, Any]) -> str:
+def enqueue(service: str, payload: dict[str, Any]) -> str:
     """Append a pending send to the queue. Returns the entry id."""
     entry = {
         "id": str(uuid.uuid4()),
@@ -38,7 +40,7 @@ def enqueue(service: str, payload: Dict[str, Any]) -> str:
     return entry["id"]
 
 
-def load_queue() -> List[Dict[str, Any]]:
+def load_queue() -> list[dict[str, Any]]:
     qf = _queue_file()
     if not qf.exists():
         return []
@@ -47,14 +49,12 @@ def load_queue() -> List[Dict[str, Any]]:
         for line in f:
             line = line.strip()
             if line:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     entries.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
     return entries
 
 
-def save_queue(entries: List[Dict[str, Any]]) -> None:
+def save_queue(entries: list[dict[str, Any]]) -> None:
     with _queue_file().open("w", encoding="utf-8") as f:
         for entry in entries:
             f.write(json.dumps(entry) + "\n")
