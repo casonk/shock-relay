@@ -16,11 +16,35 @@
   "Author": "casonk",
   "Email": "72440835+casonk@users.noreply.github.com",
   "Date": "2026-05-08T18:25:32Z",
-  "Message": "feat: add offline queue and service hardening; add sudo boundary\n\nCo-Authored-By: Claude Sonnet 4.6 \u003cnoreply@anthropic.com\u003e",
+  "Message": "feat: add offline queue and service hardening; add sudo boundary\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
   "Tags": [
    "local-path",
    "machine-specific"
   ],
   "Fingerprint": "abc041dc600e250bbc1b72fce82a87cf2deeac79:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
+ },
+ {
+  "RuleID": "keepass-real-profile-name",
+  "Description": "Real KeePass profile name committed to a config or example file",
+  "StartLine": 5,
+  "EndLine": 5,
+  "StartColumn": 2,
+  "EndColumn": 16,
+  "Match": "profile = infra",
+  "Secret": "infra",
+  "File": "config/auto-pass.example.ini",
+  "SymlinkFile": "",
+  "Commit": "28f692564103bc81be94e313ed90e092c55881ae",
+  "Link": "https://github.com/casonk/shock-relay/blob/28f692564103bc81be94e313ed90e092c55881ae/config/auto-pass.example.ini#L5",
+  "Entropy": 2.321928,
+  "Author": "casonk",
+  "Email": "72440835+casonk@users.noreply.github.com",
+  "Date": "2026-04-03T23:52:27Z",
+  "Message": "feat: add auto-pass repo defaults",
+  "Tags": [
+   "keepass",
+   "sensitive-config"
+  ],
+  "Fingerprint": "28f692564103bc81be94e313ed90e092c55881ae:config/auto-pass.example.ini:keepass-real-profile-name:5"
  }
 ]
