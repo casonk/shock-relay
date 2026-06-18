@@ -12,6 +12,7 @@ Exit codes:
     0  All pending entries delivered (or queue was empty).
     1  One or more entries still pending after this drain attempt.
 """
+
 import argparse
 import os
 import subprocess
@@ -123,7 +124,7 @@ def drain(dry_run: bool = False, verbose: bool = False) -> int:
         if result.returncode == 0:
             delivered += 1
             if verbose:
-                print(f"    -> delivered")
+                print("    -> delivered")
         else:
             failed += 1
             entry["attempts"] = entry.get("attempts", 0) + 1
@@ -138,7 +139,7 @@ def drain(dry_run: bool = False, verbose: bool = False) -> int:
         if failed:
             summary += f", still pending: {failed}"
         if remaining:
-            summary += f" (will retry on next drain)"
+            summary += " (will retry on next drain)"
         print(summary)
 
     return 1 if remaining else 0

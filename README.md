@@ -146,6 +146,12 @@ That service-specific CLI surface is the stable interface today.
    ./services/gmail-imap/send_email.py you@example.com "Hello from shock-relay" "This is a test."
    ```
 
+6. Queue noisy notifications for the next digest and send the aggregate:
+   ```bash
+   ./services/gmail-imap/queue_digest.py you@example.com "Receipt processed" "Merchant: example"
+   ./services/gmail-imap/send_digest.py --config services/gmail-imap/config.local.yaml
+   ```
+
 ## Project Structure
 
 ```
@@ -177,6 +183,10 @@ shock-relay/
   send/receive/test flows.
 - `services/gmail-imap/common.py` owns the IMAP/SMTP configuration, TLS, inbox
   filtering, and send logic for the Gmail scripts.
+- `services/gmail-imap/queue_digest.py` and `send_digest.py` aggregate noisy
+  operational notifications into one Gmail digest; the queue defaults to
+  `~/.local/share/shock-relay/gmail-digest.jsonl` and can be overridden with
+  `SHOCK_RELAY_GMAIL_DIGEST_FILE`.
 - Confirmation scripts such as `test_send_receive_confirm.py` are the closest
   thing to an integration harness today: they send a tagged message, poll for a
   reply, and then send a confirmation message with the observed response.
