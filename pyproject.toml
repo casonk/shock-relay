@@ -35,6 +35,9 @@ dev = [
     "dyno_lab @ git+https://github.com/casonk/dyno-lab.git",
 ]
 
+[tool.setuptools]
+packages = []
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
