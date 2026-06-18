@@ -5,14 +5,14 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from offline_queue import enqueue  # noqa: E402
-
 from common import (
     ConfigError,
     build_message_with_metadata,
     extract_account_and_bus_name,
     parse_metadata_args,
 )
+
+from offline_queue import enqueue  # noqa: E402
 
 
 def main() -> int:

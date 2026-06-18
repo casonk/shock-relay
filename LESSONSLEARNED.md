@@ -38,3 +38,9 @@ Unlike `CHATHISTORY.md`, this file should keep only reusable lessons that should
 - The same GitHub Actions failure notice can appear as a markdown-like table in Gmail's rendered body but as a flattened bullet summary in IMAP text, for example `* lint-and-test (3.11) failed (2 annotations)`.
 - Inbox monitors should parse both body shapes and key their dedupe on the run URL / run id rather than on the exact body text layout.
 - When validating an email parser, use a live inbox sample once before trusting an offline fixture built from a different rendering path.
+
+### 2026-06-07 — Noisy operational emails should flow through the Gmail digest queue
+
+- For high-volume automation alerts, queue notification events in `shock-relay` and send a scheduled digest instead of emitting one Gmail message per event.
+- Keep source services responsible for event content and metadata, while `shock-relay` owns SMTP send/retry behavior and `clockwork` owns digest timing.
+- Gmail helper scripts live beside other `common.py` modules, so importable scripts must force their service directory to the front of `sys.path` when loaded in shared test processes.

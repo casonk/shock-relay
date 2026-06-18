@@ -53,6 +53,9 @@ target-version = "py310"
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = ["E501", "B008", "SIM108", "SIM117"]
 
+[tool.ruff.lint.per-file-ignores]
+"services/**/*.py" = ["E402"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

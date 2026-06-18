@@ -37,9 +37,9 @@ telegram:
 
   # TLS settings for HTTPS Bot API gateways.
   tls:
+    # For private or self-signed gateways, provide your CA certificate here.
     ca_cert_path:
     ca_cert_path_env:
-    insecure_skip_verify: false
 
   # Optional: if you run a self-hosted Telegram bot webhook.
   webhook:
