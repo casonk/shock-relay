@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import json
 import os
-from dataclasses import dataclass
-from pathlib import Path
 import re
 import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 class ConfigError(RuntimeError):
@@ -38,8 +38,8 @@ class TelegramConfig:
     api_base_url: str
     bot_token: str
     timeout_seconds: int
-    allowed_chat_ids: List[str]
-    allowed_updates: List[str]
+    allowed_chat_ids: list[str]
+    allowed_updates: list[str]
     default_parse_mode: str
     insecure_skip_verify: bool
     ca_cert_path: str
@@ -123,10 +123,10 @@ def send_message(
     config: TelegramConfig,
     chat_id: str,
     message: str,
-    parse_mode: Optional[str] = None,
+    parse_mode: str | None = None,
 ) -> HttpResponse:
     validate_chat_id(config, chat_id)
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "chat_id": chat_id,
         "text": message,
     }
@@ -138,12 +138,12 @@ def send_message(
 
 def get_updates(
     config: TelegramConfig,
-    offset: Optional[int] = None,
-    limit: Optional[int] = None,
-    timeout: Optional[int] = None,
-    allowed_updates: Optional[List[str]] = None,
-) -> Dict[str, Any]:
-    payload: Dict[str, Any] = {}
+    offset: int | None = None,
+    limit: int | None = None,
+    timeout: int | None = None,
+    allowed_updates: list[str] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
     if offset is not None:
         payload["offset"] = offset
     if limit is not None:
@@ -163,7 +163,7 @@ def get_updates(
     return normalize_updates_response(get_result(response))
 
 
-def get_me(config: TelegramConfig) -> Dict[str, Any]:
+def get_me(config: TelegramConfig) -> dict[str, Any]:
     response = request_api(config, "getMe", payload={}, timeout_seconds=config.timeout_seconds)
     result = get_result(response)
     if not isinstance(result, dict):
@@ -174,8 +174,8 @@ def get_me(config: TelegramConfig) -> Dict[str, Any]:
 def request_api(
     config: TelegramConfig,
     method_name: str,
-    payload: Optional[Dict[str, Any]] = None,
-    timeout_seconds: Optional[int] = None,
+    payload: dict[str, Any] | None = None,
+    timeout_seconds: int | None = None,
 ) -> HttpResponse:
     response = request_json(
         method="POST",
@@ -205,7 +205,7 @@ def get_result(response: HttpResponse) -> Any:
     return body.get("result")
 
 
-def normalize_updates_response(result: Any) -> Dict[str, Any]:
+def normalize_updates_response(result: Any) -> dict[str, Any]:
     if not isinstance(result, list):
         raise GatewayError("Telegram getUpdates result was not a list")
 
@@ -220,12 +220,12 @@ def normalize_updates_response(result: Any) -> Dict[str, Any]:
     }
 
 
-def normalize_update(update: Any) -> Dict[str, Any]:
+def normalize_update(update: Any) -> dict[str, Any]:
     if not isinstance(update, dict):
         raise GatewayError("Telegram update was not a JSON object")
 
     update_type = ""
-    message_payload: Dict[str, Any] = {}
+    message_payload: dict[str, Any] = {}
     for candidate in (
         "message",
         "edited_message",
@@ -264,7 +264,7 @@ def normalize_update(update: Any) -> Dict[str, Any]:
     }
 
 
-def update_fingerprint(update: Dict[str, Any]) -> str:
+def update_fingerprint(update: dict[str, Any]) -> str:
     update_id = update.get("update_id")
     if isinstance(update_id, int):
         return f"update:{update_id}"
@@ -307,7 +307,7 @@ def request_json(
     method: str,
     url: str,
     timeout_seconds: int,
-    payload: Optional[Dict[str, Any]] = None,
+    payload: dict[str, Any] | None = None,
     insecure_skip_verify: bool = False,
     ca_cert_path: str = "",
 ) -> HttpResponse:
@@ -339,9 +339,12 @@ def request_json(
         raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
+def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> ssl.SSLContext | None:
     if insecure_skip_verify:
-        return ssl._create_unverified_context()
+        raise ConfigError(
+            "insecure_skip_verify=true is not supported. "
+            "For private or self-signed gateways, set tls.ca_cert_path to your CA certificate instead."
+        )
     if ca_cert_path:
         return ssl.create_default_context(cafile=ca_cert_path)
     return None
@@ -356,7 +359,7 @@ def parse_json_body(text: str) -> Any:
         return {"text": text}
 
 
-def first_non_empty(mapping: Dict[str, Any], keys: List[str]) -> Optional[str]:
+def first_non_empty(mapping: dict[str, Any], keys: list[str]) -> str | None:
     for key in keys:
         value = optional_string(mapping.get(key))
         if value:
@@ -364,7 +367,7 @@ def first_non_empty(mapping: Dict[str, Any], keys: List[str]) -> Optional[str]:
     return None
 
 
-def read_scalar_list(value: Any, field_name: str) -> List[str]:
+def read_scalar_list(value: Any, field_name: str) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -412,7 +415,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(env_name: str | None, field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
@@ -425,7 +428,7 @@ def resolve_env_value(env_name: Optional[str], field_name: str, required: bool =
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -435,10 +438,10 @@ def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[s
     return value
 
 
-def parse_simple_yaml(text: str) -> Dict[str, Any]:
+def parse_simple_yaml(text: str) -> dict[str, Any]:
     lines = text.splitlines()
-    root: Dict[str, Any] = {}
-    stack: List[Any] = [(-1, root)]
+    root: dict[str, Any] = {}
+    stack: list[Any] = [(-1, root)]
 
     for index, raw_line in enumerate(lines):
         line = strip_comment(raw_line).rstrip()
@@ -486,7 +489,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(lines: list[str], start_index: int, current_indent: int) -> type | None:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():

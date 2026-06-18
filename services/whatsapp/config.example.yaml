@@ -45,12 +45,9 @@ http:
 
   # TLS settings for HTTPS gateways.
   tls:
-    # Prefer a CA cert path for private/self-signed gateways.
+    # For private or self-signed gateways, provide your CA certificate here.
     ca_cert_path:
     ca_cert_path_env:
-
-    # Dev/test only. Do not enable in production.
-    insecure_skip_verify: false
 
 messaging:
   # Sender identity (varies by provider).

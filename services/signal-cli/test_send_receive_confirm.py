@@ -7,10 +7,9 @@ import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Optional, Tuple
 
 
-def extract_signal_cli_fields(config_path: str) -> Tuple[str, str, str]:
+def extract_signal_cli_fields(config_path: str) -> tuple[str, str, str]:
     """
     Extract (account, bus_name, linked_name) from:
       signal_cli:
@@ -126,7 +125,7 @@ def main() -> int:
     subprocess.run(send_cmd, check=True)
 
     start = time.monotonic()
-    response_raw: Optional[str] = None
+    response_raw: str | None = None
 
     # Loop until we find a received message that does NOT contain our reg token.
     while True:

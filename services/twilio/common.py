@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-import configparser
 import base64
+import configparser
 import json
 import os
-from dataclasses import dataclass
-from email.utils import parsedate_to_datetime
-from pathlib import Path
 import re
 import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
+from pathlib import Path
+from typing import Any
 
 
 class ConfigError(RuntimeError):
@@ -43,7 +43,7 @@ class TwilioConfig:
     auth_token: str
     from_phone: str
     timeout_seconds: int
-    allowed_recipients: List[str]
+    allowed_recipients: list[str]
     insecure_skip_verify: bool
     ca_cert_path: str
 
@@ -117,8 +117,10 @@ def _resolve_keepass_value(
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
     from auto_pass.envfile import load_config_environment  # noqa: PLC0415
-    from auto_pass.keepassxc import KeepassCommandError  # noqa: PLC0415
-    from auto_pass.keepassxc import resolve_keepassxc_entry  # noqa: PLC0415
+    from auto_pass.keepassxc import (
+        KeepassCommandError,  # noqa: PLC0415
+        resolve_keepassxc_entry,  # noqa: PLC0415
+    )
 
     _ap_env = _ap_root / "config" / "auto-pass.env.local"
     if _ap_env.is_file():
@@ -275,12 +277,12 @@ def send_sms(config: TwilioConfig, to_number: str, message: str) -> HttpResponse
 
 def list_messages(
     config: TwilioConfig,
-    to_number: Optional[str] = None,
-    from_number: Optional[str] = None,
-    limit: Optional[int] = None,
-    page_size: Optional[int] = None,
-) -> Dict[str, Any]:
-    params: Dict[str, Any] = {}
+    to_number: str | None = None,
+    from_number: str | None = None,
+    limit: int | None = None,
+    page_size: int | None = None,
+) -> dict[str, Any]:
+    params: dict[str, Any] = {}
     if to_number:
         params["To"] = to_number
     if from_number:
@@ -292,7 +294,7 @@ def list_messages(
     return normalize_messages_response(get_messages_list(response), limit=limit)
 
 
-def get_messages_list(response: HttpResponse) -> List[Any]:
+def get_messages_list(response: HttpResponse) -> list[Any]:
     body = response.json_body
     if not isinstance(body, dict):
         raise GatewayError("Twilio API response was not a JSON object")
@@ -302,7 +304,7 @@ def get_messages_list(response: HttpResponse) -> List[Any]:
     return messages
 
 
-def normalize_messages_response(messages: List[Any], limit: Optional[int] = None) -> Dict[str, Any]:
+def normalize_messages_response(messages: list[Any], limit: int | None = None) -> dict[str, Any]:
     normalized = [normalize_message(item) for item in messages]
     if limit is not None:
         normalized = normalized[:limit]
@@ -311,7 +313,7 @@ def normalize_messages_response(messages: List[Any], limit: Optional[int] = None
     }
 
 
-def normalize_message(message: Any) -> Dict[str, Any]:
+def normalize_message(message: Any) -> dict[str, Any]:
     if not isinstance(message, dict):
         raise GatewayError("Twilio message was not a JSON object")
 
@@ -329,7 +331,7 @@ def normalize_message(message: Any) -> Dict[str, Any]:
     }
 
 
-def extract_timestamp(message: Dict[str, Any]) -> Optional[int]:
+def extract_timestamp(message: dict[str, Any]) -> int | None:
     for key in ("date_sent", "date_created", "date_updated"):
         value = optional_string(message.get(key))
         if not value:
@@ -341,7 +343,7 @@ def extract_timestamp(message: Dict[str, Any]) -> Optional[int]:
     return None
 
 
-def message_fingerprint(message: Dict[str, Any]) -> str:
+def message_fingerprint(message: dict[str, Any]) -> str:
     sid = optional_string(message.get("sid"))
     if sid:
         return f"sid:{sid}"
@@ -352,7 +354,7 @@ def message_fingerprint(message: Dict[str, Any]) -> str:
 def request_twilio(
     config: TwilioConfig,
     method: str,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
 ) -> HttpResponse:
     return request_form(
         method=method,
@@ -376,7 +378,7 @@ def request_form(
     username: str,
     password: str,
     timeout_seconds: int,
-    params: Dict[str, Any],
+    params: dict[str, Any],
     insecure_skip_verify: bool = False,
     ca_cert_path: str = "",
 ) -> HttpResponse:
@@ -392,7 +394,7 @@ def request_form(
     else:
         data = encoded_params.encode("utf-8")
 
-    token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+    token = base64.b64encode(f"{username}:{password}".encode()).decode("ascii")
     headers = {
         "Authorization": f"Basic {token}",
     }
@@ -425,9 +427,12 @@ def request_form(
         raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
+def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> ssl.SSLContext | None:
     if insecure_skip_verify:
-        return ssl._create_unverified_context()
+        raise ConfigError(
+            "insecure_skip_verify=true is not supported. "
+            "For private or self-signed gateways, set tls.ca_cert_path to your CA certificate instead."
+        )
     if ca_cert_path:
         return ssl.create_default_context(cafile=ca_cert_path)
     return None
@@ -443,7 +448,7 @@ def validate_recipient(config: TwilioConfig, recipient: str) -> None:
     )
 
 
-def read_allowed_recipients(sms_cfg: Dict[str, Any]) -> List[str]:
+def read_allowed_recipients(sms_cfg: dict[str, Any]) -> list[str]:
     recipients = read_scalar_list(
         sms_cfg.get("allowed_recipients"), "twilio.sms.allowed_recipients"
     )
@@ -457,7 +462,7 @@ def read_allowed_recipients(sms_cfg: Dict[str, Any]) -> List[str]:
         )
         recipients.extend(split_values(raw_value))
 
-    normalized: List[str] = []
+    normalized: list[str] = []
     seen = set()
     for item in recipients:
         candidate = item.strip()
@@ -484,7 +489,7 @@ def canonical_phone(value: Any) -> str:
     return re.sub(r"[^0-9+]", "", text)
 
 
-def split_values(value: str) -> List[str]:
+def split_values(value: str) -> list[str]:
     return [item.strip() for item in re.split(r"[\n,]+", value) if item.strip()]
 
 
@@ -497,7 +502,7 @@ def parse_json_body(text: str) -> Any:
         return {"text": text}
 
 
-def read_scalar_list(value: Any, field_name: str) -> List[str]:
+def read_scalar_list(value: Any, field_name: str) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -545,7 +550,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(env_name: str | None, field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
     value = os.environ.get(env_name, "")
@@ -558,7 +563,7 @@ def resolve_env_value(env_name: Optional[str], field_name: str, required: bool =
     return ""
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -568,10 +573,10 @@ def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[s
     return value
 
 
-def parse_simple_yaml(text: str) -> Dict[str, Any]:
+def parse_simple_yaml(text: str) -> dict[str, Any]:
     lines = text.splitlines()
-    root: Dict[str, Any] = {}
-    stack: List[Any] = [(-1, root)]
+    root: dict[str, Any] = {}
+    stack: list[Any] = [(-1, root)]
 
     for index, raw_line in enumerate(lines):
         line = strip_comment(raw_line).rstrip()
@@ -619,7 +624,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(lines: list[str], start_index: int, current_indent: int) -> type | None:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():

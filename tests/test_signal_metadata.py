@@ -59,10 +59,11 @@ def test_send_message_main_includes_metadata_block(monkeypatch, tmp_path):
 
     seen = {}
 
-    def fake_run(cmd, check):
+    def fake_run(cmd, capture_output, text):
         seen["cmd"] = cmd
-        seen["check"] = check
-        return Mock(returncode=0)
+        seen["capture_output"] = capture_output
+        seen["text"] = text
+        return Mock(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(signal_send_message.subprocess, "run", fake_run)
     monkeypatch.setattr(
@@ -82,7 +83,8 @@ def test_send_message_main_includes_metadata_block(monkeypatch, tmp_path):
     )
 
     assert signal_send_message.main() == 0
-    assert seen["check"] is True
+    assert seen["capture_output"] is True
+    assert seen["text"] is True
     assert seen["cmd"][:5] == ["signal-cli", "-a", "+15551234567", "send", "-m"]
     assert seen["cmd"][5] == "cc-service: intake\ncc-intent: request\n\nstatus"
     assert seen["cmd"][6] == "+15550000000"

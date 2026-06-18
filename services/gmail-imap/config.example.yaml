@@ -55,9 +55,9 @@ imap:
   search_charset:
 
   tls:
+    # For private or self-signed mail servers, provide your CA certificate here.
     ca_cert_path:
     ca_cert_path_env:
-    insecure_skip_verify: false
 
 smtp:
   host: smtp.gmail.com
@@ -91,9 +91,9 @@ smtp:
   allowed_recipient_envs: []
 
   tls:
+    # For private or self-signed mail servers, provide your CA certificate here.
     ca_cert_path:
     ca_cert_path_env:
-    insecure_skip_verify: false
 
 filters:
   # Default inbox filters used by check_inbox.py.

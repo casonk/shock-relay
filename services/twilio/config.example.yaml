@@ -54,9 +54,9 @@ twilio:
 
   # TLS settings for HTTPS API access.
   tls:
+    # For private or self-signed gateways, provide your CA certificate here.
     ca_cert_path:
     ca_cert_path_env:
-    insecure_skip_verify: false
 
 env:
   # Optional overrides / additional orchestrator variables.

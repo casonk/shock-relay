@@ -6,8 +6,6 @@ import sys
 import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from offline_queue import enqueue  # noqa: E402
-
 from common import (
     ConfigError,
     MailError,
@@ -17,6 +15,8 @@ from common import (
     parse_custom_header_args,
     send_email,
 )
+
+from offline_queue import enqueue  # noqa: E402
 
 
 def main() -> int:

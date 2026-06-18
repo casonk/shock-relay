@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 import base64
-from dataclasses import dataclass
 import json
 import os
-from pathlib import Path
 import re
 import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 class ConfigError(RuntimeError):
@@ -41,8 +41,8 @@ class WhatsAppConfig:
     receive_path: str
     timeout_seconds: int
     sender: str
-    allowed_recipients: List[str]
-    headers: Dict[str, str]
+    allowed_recipients: list[str]
+    headers: dict[str, str]
     insecure_skip_verify: bool
     ca_cert_path: str
 
@@ -123,11 +123,11 @@ def send_message(
     config: WhatsAppConfig,
     recipient: str,
     message: str,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> HttpResponse:
     validate_recipient(config, recipient)
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "from": config.sender,
         "to": recipient,
         "recipient": recipient,
@@ -151,12 +151,12 @@ def send_message(
 
 def receive_messages(
     config: WhatsAppConfig,
-    limit: Optional[int] = None,
-    timeout: Optional[int] = None,
-    cursor: Optional[str] = None,
-    since: Optional[str] = None,
-) -> Dict[str, Any]:
-    params: Dict[str, str] = {}
+    limit: int | None = None,
+    timeout: int | None = None,
+    cursor: str | None = None,
+    since: str | None = None,
+) -> dict[str, Any]:
+    params: dict[str, str] = {}
     if limit is not None:
         params["limit"] = str(limit)
     if timeout is not None:
@@ -179,7 +179,7 @@ def receive_messages(
     return normalize_receive_response(response.json_body)
 
 
-def normalize_receive_response(payload: Any) -> Dict[str, Any]:
+def normalize_receive_response(payload: Any) -> dict[str, Any]:
     next_cursor = None
 
     if isinstance(payload, list):
@@ -204,7 +204,7 @@ def normalize_receive_response(payload: Any) -> Dict[str, Any]:
     }
 
 
-def normalize_message(message: Any) -> Dict[str, Any]:
+def normalize_message(message: Any) -> dict[str, Any]:
     if not isinstance(message, dict):
         return {
             "id": None,
@@ -232,7 +232,7 @@ def normalize_message(message: Any) -> Dict[str, Any]:
     }
 
 
-def message_fingerprint(message: Dict[str, Any]) -> str:
+def message_fingerprint(message: dict[str, Any]) -> str:
     message_id = optional_string(message.get("id"))
     if message_id:
         return f"id:{message_id}"
@@ -241,13 +241,13 @@ def message_fingerprint(message: Dict[str, Any]) -> str:
     return json.dumps(raw, sort_keys=True, default=str)
 
 
-def party_matches(actual: Optional[str], expected: Optional[str]) -> bool:
+def party_matches(actual: str | None, expected: str | None) -> bool:
     if not actual or not expected:
         return False
     return canonical_party(actual) == canonical_party(expected)
 
 
-def build_url(base_url: str, path: str, params: Optional[Dict[str, str]] = None) -> str:
+def build_url(base_url: str, path: str, params: dict[str, str] | None = None) -> str:
     normalized_path = "/" + path.lstrip("/")
     url = urllib.parse.urljoin(base_url + "/", normalized_path.lstrip("/"))
     if params:
@@ -259,8 +259,8 @@ def request_json(
     method: str,
     url: str,
     timeout_seconds: int,
-    headers: Optional[Dict[str, str]] = None,
-    payload: Optional[Dict[str, Any]] = None,
+    headers: dict[str, str] | None = None,
+    payload: dict[str, Any] | None = None,
     insecure_skip_verify: bool = False,
     ca_cert_path: str = "",
 ) -> HttpResponse:
@@ -297,16 +297,19 @@ def request_json(
         raise NetworkError(f"Request failed: {exc.reason}") from exc
 
 
-def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> Optional[ssl.SSLContext]:
+def build_ssl_context(insecure_skip_verify: bool, ca_cert_path: str) -> ssl.SSLContext | None:
     if insecure_skip_verify:
-        return ssl._create_unverified_context()
+        raise ConfigError(
+            "insecure_skip_verify=true is not supported. "
+            "For private or self-signed gateways, set tls.ca_cert_path to your CA certificate instead."
+        )
     if ca_cert_path:
         return ssl.create_default_context(cafile=ca_cert_path)
     return None
 
 
-def build_auth_headers(http_cfg: Dict[str, Any], auth_cfg: Dict[str, Any]) -> Dict[str, str]:
-    headers: Dict[str, str] = {}
+def build_auth_headers(http_cfg: dict[str, Any], auth_cfg: dict[str, Any]) -> dict[str, str]:
+    headers: dict[str, str] = {}
 
     api_key_env = optional_string(http_cfg.get("api_key_env"))
     if api_key_env:
@@ -330,7 +333,7 @@ def build_auth_headers(http_cfg: Dict[str, Any], auth_cfg: Dict[str, Any]) -> Di
             )
         username = resolve_env_value(basic_username_env, field_name="http.auth.basic_username_env")
         password = resolve_env_value(basic_password_env, field_name="http.auth.basic_password_env")
-        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        token = base64.b64encode(f"{username}:{password}".encode()).decode("ascii")
         headers["Authorization"] = f"Basic {token}"
 
     return headers
@@ -348,8 +351,8 @@ def validate_recipient(config: WhatsAppConfig, recipient: str) -> None:
     )
 
 
-def read_allowed_recipients(messaging_cfg: Dict[str, Any]) -> List[str]:
-    recipients: List[str] = []
+def read_allowed_recipients(messaging_cfg: dict[str, Any]) -> list[str]:
+    recipients: list[str] = []
     recipients.extend(
         read_string_list(messaging_cfg.get("allowed_recipients"), "messaging.allowed_recipients")
     )
@@ -364,7 +367,7 @@ def read_allowed_recipients(messaging_cfg: Dict[str, Any]) -> List[str]:
         )
         recipients.extend(split_recipient_values(raw_value))
 
-    normalized: List[str] = []
+    normalized: list[str] = []
     seen = set()
     for item in recipients:
         candidate = item.strip()
@@ -378,11 +381,11 @@ def read_allowed_recipients(messaging_cfg: Dict[str, Any]) -> List[str]:
     return normalized
 
 
-def split_recipient_values(value: str) -> List[str]:
+def split_recipient_values(value: str) -> list[str]:
     return [item.strip() for item in re.split(r"[\n,]+", value) if item.strip()]
 
 
-def resolve_env_value(env_name: Optional[str], field_name: str, required: bool = True) -> str:
+def resolve_env_value(env_name: str | None, field_name: str, required: bool = True) -> str:
     if not env_name:
         return ""
 
@@ -405,7 +408,7 @@ def parse_json_body(text: str) -> Any:
         return {"text": text}
 
 
-def first_non_empty(mapping: Dict[str, Any], keys: List[str]) -> Optional[str]:
+def first_non_empty(mapping: dict[str, Any], keys: list[str]) -> str | None:
     for key in keys:
         value = optional_string(mapping.get(key))
         if value:
@@ -432,7 +435,7 @@ def looks_like_message(value: Any) -> bool:
     return any(key in value for key in ("from", "to", "text", "message", "body", "content"))
 
 
-def read_string_list(value: Any, field_name: str) -> List[str]:
+def read_string_list(value: Any, field_name: str) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list):
@@ -487,7 +490,7 @@ def parse_bool(value: Any, default: bool, field_name: str) -> bool:
     raise ConfigError(f"ERROR: {field_name} must be a boolean")
 
 
-def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[str, Any]:
+def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> dict[str, Any]:
     if value is None:
         if allow_empty:
             return {}
@@ -497,10 +500,10 @@ def as_mapping(value: Any, field_name: str, allow_empty: bool = False) -> Dict[s
     return value
 
 
-def parse_simple_yaml(text: str) -> Dict[str, Any]:
+def parse_simple_yaml(text: str) -> dict[str, Any]:
     lines = text.splitlines()
-    root: Dict[str, Any] = {}
-    stack: List[Any] = [(-1, root)]
+    root: dict[str, Any] = {}
+    stack: list[Any] = [(-1, root)]
 
     for index, raw_line in enumerate(lines):
         line = strip_comment(raw_line).rstrip()
@@ -549,7 +552,7 @@ def parse_simple_yaml(text: str) -> Dict[str, Any]:
     return root
 
 
-def next_container_kind(lines: List[str], start_index: int, current_indent: int) -> Optional[type]:
+def next_container_kind(lines: list[str], start_index: int, current_indent: int) -> type | None:
     for raw_line in lines[start_index + 1 :]:
         line = strip_comment(raw_line).rstrip()
         if not line.strip():

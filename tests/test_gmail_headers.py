@@ -116,7 +116,7 @@ class _VerifyImapClient:
     def list(self):
         payload = []
         for mailbox in self.sent_mailboxes:
-            payload.append(f'(\\HasNoChildren \\Sent) "/" "{mailbox}"'.encode("utf-8"))
+            payload.append(f'(\\HasNoChildren \\Sent) "/" "{mailbox}"'.encode())
         return ("OK", payload)
 
     def select(self, mailbox, readonly=True):
