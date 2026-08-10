@@ -10,18 +10,18 @@
   "Secret": "/mnt/4tb-m2/git/",
   "File": "scripts/nm-dispatcher-shock-relay",
   "SymlinkFile": "",
-  "Commit": "abc041dc600e250bbc1b72fce82a87cf2deeac79",
-  "Link": "https://github.com/casonk/shock-relay/blob/abc041dc600e250bbc1b72fce82a87cf2deeac79/scripts/nm-dispatcher-shock-relay#L15",
+  "Commit": "87f2322ad2044962175de96e1be5832e2db8b991",
+  "Link": "https://github.com/casonk/shock-relay/blob/87f2322ad2044962175de96e1be5832e2db8b991/scripts/nm-dispatcher-shock-relay#L15",
   "Entropy": 3.0778196,
   "Author": "casonk",
   "Email": "72440835+casonk@users.noreply.github.com",
   "Date": "2026-05-08T18:25:32Z",
-  "Message": "feat: add offline queue and service hardening; add sudo boundary\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+  "Message": "feat: add offline queue and service hardening; add sudo boundary",
   "Tags": [
    "local-path",
    "machine-specific"
   ],
-  "Fingerprint": "abc041dc600e250bbc1b72fce82a87cf2deeac79:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
+  "Fingerprint": "87f2322ad2044962175de96e1be5832e2db8b991:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
  },
  {
   "RuleID": "keepass-real-profile-name",
@@ -34,8 +34,8 @@
   "Secret": "infra",
   "File": "config/auto-pass.example.ini",
   "SymlinkFile": "",
-  "Commit": "28f692564103bc81be94e313ed90e092c55881ae",
-  "Link": "https://github.com/casonk/shock-relay/blob/28f692564103bc81be94e313ed90e092c55881ae/config/auto-pass.example.ini#L5",
+  "Commit": "c73b3f6385ec8eb3b499ab67f0718506eede713a",
+  "Link": "https://github.com/casonk/shock-relay/blob/c73b3f6385ec8eb3b499ab67f0718506eede713a/config/auto-pass.example.ini#L5",
   "Entropy": 2.321928,
   "Author": "casonk",
   "Email": "72440835+casonk@users.noreply.github.com",
@@ -45,6 +45,6 @@
    "keepass",
    "sensitive-config"
   ],
-  "Fingerprint": "28f692564103bc81be94e313ed90e092c55881ae:config/auto-pass.example.ini:keepass-real-profile-name:5"
+  "Fingerprint": "c73b3f6385ec8eb3b499ab67f0718506eede713a:config/auto-pass.example.ini:keepass-real-profile-name:5"
  }
 ]
