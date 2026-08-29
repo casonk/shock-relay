@@ -187,6 +187,18 @@ shock-relay/
   operational notifications into one Gmail digest; the queue defaults to
   `~/.local/share/shock-relay/gmail-digest.jsonl` and can be overridden with
   `SHOCK_RELAY_GMAIL_DIGEST_FILE`.
+- Provider sends that fail because the network is unavailable are queued in an
+  owner-only SQLite database at `~/.local/share/shock-relay/queue.sqlite3`.
+  `scripts/drain_queue.py` claims each due delivery with a lease, then commits,
+  delays, or rejects it after the provider attempt. This is **at-least-once**
+  delivery: a timeout after provider acceptance can produce a duplicate on a
+  later retry. Use a provider or caller idempotency key when duplicates would
+  be harmful. The old `queue.jsonl` is imported idempotently once and renamed
+  to `queue.jsonl.migrated` only after a complete import.
+- The durable queue is an optional reviewed runtime integration: install the
+  local Differential package into the service environment before enabling
+  network-failure queueing. The provider CLIs remain usable without it and
+  report a clear setup error if a network failure needs queue storage.
 - Confirmation scripts such as `test_send_receive_confirm.py` are the closest
   thing to an integration harness today: they send a tagged message, poll for a
   reply, and then send a confirmation message with the observed response.

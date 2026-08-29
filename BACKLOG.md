@@ -13,3 +13,5 @@ Mark items `[x]` when complete and move them to Done.
 ## In Progress
 
 ## Done
+
+- [x] [manual:2026-08-29] **Migrate offline delivery queue to Differential durable leases** — Replaced JSONL read/rewrite handling with leased SQLite commands, delayed retry/rejection outcomes, and idempotent legacy migration. Provider delivery remains explicitly at-least-once.
