@@ -44,3 +44,13 @@ Unlike `CHATHISTORY.md`, this file should keep only reusable lessons that should
 - For high-volume automation alerts, queue notification events in `shock-relay` and send a scheduled digest instead of emitting one Gmail message per event.
 - Keep source services responsible for event content and metadata, while `shock-relay` owns SMTP send/retry behavior and `clockwork` owns digest timing.
 - Gmail helper scripts live beside other `common.py` modules, so importable scripts must force their service directory to the front of `sys.path` when loaded in shared test processes.
+
+### 2026-08-29 — An offline provider queue needs leases, delayed retries, and explicit at-least-once documentation
+
+- A JSONL load-and-rewrite drain lets concurrent workers overwrite each other's state and can retry the same failed item indefinitely in one run.
+- Claim a durable command with a fenced lease, then complete it, reject malformed input, or reschedule it into the future; this limits one drain run to one provider attempt per command.
+- A provider timeout after acceptance is indistinguishable from a failed send, so document at-least-once behavior and keep user-visible exactly-once guarantees with the provider or caller idempotency key.
+- Do not make a private sibling repository a public package's mandatory
+  source-dependency. Load the reviewed runtime at the feature boundary and
+  return an actionable setup error when it is absent, so ordinary CLI installs
+  and public CI remain reproducible.
