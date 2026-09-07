@@ -6,8 +6,10 @@ import importlib.util
 import json
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +18,110 @@ sys.path.insert(0, str(DIFFERENTIAL_SRC))
 sys.path.insert(0, str(REPO_ROOT))
 
 import offline_queue  # noqa: E402
+
+
+class FakeMutation:
+    def __init__(
+        self,
+        action: str,
+        collection: str,
+        *,
+        resource_id: str,
+        document: dict,
+    ) -> None:
+        self.action = action
+        self.collection = collection
+        self.resource_id = resource_id
+        self.document = document
+
+    def to_dict(self) -> dict:
+        return {
+            "action": self.action,
+            "collection": self.collection,
+            "resource_id": self.resource_id,
+            "document": self.document,
+        }
+
+
+class FakeEdgeDeliveryStore:
+    _stores: dict[str, dict[str, dict]] = {}
+
+    def __init__(self, path: Path) -> None:
+        self.path = str(path)
+        Path(path).touch(mode=0o600, exist_ok=True)
+        self.operations = self._stores.setdefault(self.path, {})
+
+    def enqueue(
+        self,
+        mutations: list[FakeMutation],
+        *,
+        origin_node: str,
+        operation_id: str,
+    ) -> None:
+        self.operations.setdefault(
+            operation_id,
+            {
+                "origin_node": origin_node,
+                "operation_id": operation_id,
+                "mutations": [mutation.to_dict() for mutation in mutations],
+                "available_at": 0.0,
+                "lease_token": None,
+                "completed": False,
+            },
+        )
+
+    def claim(self, worker_id: str, *, lease_seconds: int) -> dict | None:
+        now = time.time()
+        for operation in self.operations.values():
+            if operation["completed"] or operation["available_at"] > now:
+                continue
+            lease_token = f"{worker_id}:{operation['operation_id']}"
+            operation["lease_token"] = lease_token
+            return {
+                "origin_node": operation["origin_node"],
+                "operation_id": operation["operation_id"],
+                "lease_token": lease_token,
+                "mutations": operation["mutations"],
+            }
+        return None
+
+    def complete(
+        self,
+        origin_node: str,
+        operation_id: str,
+        *,
+        worker_id: str,
+        lease_token: str,
+        result: dict,
+    ) -> None:
+        operation = self.operations[operation_id]
+        if operation["origin_node"] == origin_node and operation["lease_token"] == lease_token:
+            operation["completed"] = True
+
+    def fail(
+        self,
+        origin_node: str,
+        operation_id: str,
+        *,
+        worker_id: str,
+        lease_token: str,
+        problem: dict,
+        retry_after_seconds: int | None,
+    ) -> None:
+        operation = self.operations[operation_id]
+        if operation["origin_node"] != origin_node or operation["lease_token"] != lease_token:
+            return
+        if retry_after_seconds is None:
+            operation["completed"] = True
+        else:
+            operation["available_at"] = time.time() + retry_after_seconds
+        operation["lease_token"] = None
+
+
+def _fake_import_module(name: str):
+    if name != "private-repository":
+        raise ImportError(name)
+    return SimpleNamespace(EdgeDeliveryStore=FakeEdgeDeliveryStore, Mutation=FakeMutation)
 
 
 def _load_drain_module():
@@ -33,6 +139,12 @@ class OfflineQueueTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)
         self.directory = Path(self.temporary_directory.name)
+        FakeEdgeDeliveryStore._stores.clear()
+        self.import_patch = patch.object(
+            offline_queue, "import_module", side_effect=_fake_import_module
+        )
+        self.import_patch.start()
+        self.addCleanup(self.import_patch.stop)
 
     def test_missing_differential_runtime_reports_a_setup_error(self) -> None:
         with patch.object(offline_queue, "import_module", side_effect=ImportError("missing")):
