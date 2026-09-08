@@ -5,8 +5,8 @@ skinparam shadowing false
 skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
-rectangle ".github/workflows/ci.yml\n6 detected tools" as source_github_workflows_ci_yml #E0F2FE
-rectangle ".github/workflows/secret-scan.yml\n2 detected tools" as source_github_workflows_secret_scan_yml #E0F2FE
+rectangle ".github/workflows/ci.yml\n2 detected tools" as source_github_workflows_ci_yml #E0F2FE
+rectangle ".github/workflows/secret-scan.yml\n1 detected tool" as source_github_workflows_secret_scan_yml #E0F2FE
 rectangle "scripts/nm-dispatcher-shock-relay\n3 detected tools" as source_scripts_nm_dispatcher_shock_relay #E0F2FE
 rectangle "scripts/run_tachometer_profile.sh\n3 detected tools" as source_scripts_run_tachometer_profile_sh #E0F2FE
 rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
@@ -37,14 +37,13 @@ cloud "[id," as tool_id #FEF3C7
 cloud "[text," as tool_text #FEF3C7
 cloud "[timestamp," as tool_timestamp #FEF3C7
 cloud "[to," as tool_to #FEF3C7
-cloud "actions/checkout" as tool_actions_checkout #FEF3C7
-cloud "actions/setup-python" as tool_actions_setup_python #FEF3C7
-cloud "apt-get" as tool_apt_get #FEF3C7
 cloud "args+=(--data-urlencode" as tool_args_data_urlencode #FEF3C7
 cloud "awk" as tool_awk #FEF3C7
+cloud "casonk/.github/.github/workflows/python-ci.yml" as tool_casonk_github_github_workflows_python_ci_yml #FEF3C7
+cloud "casonk/.github/.github/workflows/secret-scan.yml" as tool_casonk_github_github_workflows_secret_scan_yml #FEF3C7
+cloud "casonk/.github/.github/workflows/shell-ci.yml" as tool_casonk_github_github_workflows_shell_ci_yml #FEF3C7
 cloud "cat" as tool_cat #FEF3C7
 cloud "ch" as tool_ch #FEF3C7
-cloud "compileall" as tool_compileall #FEF3C7
 cloud "curl" as tool_curl #FEF3C7
 cloud "curl_args+=(--cacert" as tool_curl_args_cacert #FEF3C7
 cloud "curl_args+=(--data-urlencode" as tool_curl_args_data_urlencode #FEF3C7
@@ -55,7 +54,6 @@ cloud "depth++" as tool_depth_2 #FEF3C7
 cloud "depth--" as tool_depth_3 #FEF3C7
 cloud "end" as tool_end #FEF3C7
 cloud "full_key" as tool_full_key #FEF3C7
-cloud "gitleaks/gitleaks-action" as tool_gitleaks_gitleaks_action #FEF3C7
 cloud "head" as tool_head #FEF3C7
 cloud "i" as tool_i #FEF3C7
 cloud "in_double" as tool_in_double #FEF3C7
@@ -85,7 +83,6 @@ cloud "run" as tool_run #FEF3C7
 cloud "s" as tool_s #FEF3C7
 cloud "sed" as tool_sed #FEF3C7
 cloud "separator" as tool_separator #FEF3C7
-cloud "services" as tool_services #FEF3C7
 cloud "signal-cli" as tool_signal_cli #FEF3C7
 cloud "signal_args+=(--bus-name" as tool_signal_args_bus_name #FEF3C7
 cloud "sleep" as tool_sleep #FEF3C7
@@ -105,16 +102,10 @@ cloud "value" as tool_value #FEF3C7
 cloud "whatsapp_load_config" as tool_whatsapp_load_config #FEF3C7
 cloud "whatsapp_send_message_request" as tool_whatsapp_send_message_request #FEF3C7
 cloud "who" as tool_who #FEF3C7
-cloud "xargs" as tool_xargs #FEF3C7
 cloud "yes" as tool_yes #FEF3C7
-source_github_workflows_ci_yml --> tool_actions_checkout
-source_github_workflows_ci_yml --> tool_actions_setup_python
-source_github_workflows_ci_yml --> tool_apt_get
-source_github_workflows_ci_yml --> tool_compileall
-source_github_workflows_ci_yml --> tool_services
-source_github_workflows_ci_yml --> tool_xargs
-source_github_workflows_secret_scan_yml --> tool_actions_checkout
-source_github_workflows_secret_scan_yml --> tool_gitleaks_gitleaks_action
+source_github_workflows_ci_yml --> tool_casonk_github_github_workflows_python_ci_yml
+source_github_workflows_ci_yml --> tool_casonk_github_github_workflows_shell_ci_yml
+source_github_workflows_secret_scan_yml --> tool_casonk_github_github_workflows_secret_scan_yml
 source_scripts_nm_dispatcher_shock_relay --> tool_python3
 source_scripts_nm_dispatcher_shock_relay --> tool_su
 source_scripts_nm_dispatcher_shock_relay --> tool_who
@@ -298,6 +289,6 @@ source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_con
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
 note as toolingGraphSummary
 Scanned 19 tooling entrypoints.
-Detected 83 third-party tools.
+Detected 79 third-party tools.
 end note
 @enduml
