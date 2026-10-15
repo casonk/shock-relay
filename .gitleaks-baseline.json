@@ -10,8 +10,7 @@
   "Secret": "/mnt/4tb-m2/git/",
   "File": "scripts/nm-dispatcher-shock-relay",
   "SymlinkFile": "",
-  "Commit": "87f2322ad2044962175de96e1be5832e2db8b991",
-  "Link": "https://github.com/casonk/shock-relay/blob/87f2322ad2044962175de96e1be5832e2db8b991/scripts/nm-dispatcher-shock-relay#L15",
+  "Commit": "9f6cd62330534c2e972260c9f33a638ce7d1d6c9",
   "Entropy": 3.0778196,
   "Author": "casonk",
   "Email": "72440835+casonk@users.noreply.github.com",
@@ -21,7 +20,7 @@
    "local-path",
    "machine-specific"
   ],
-  "Fingerprint": "87f2322ad2044962175de96e1be5832e2db8b991:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
+  "Fingerprint": "9f6cd62330534c2e972260c9f33a638ce7d1d6c9:scripts/nm-dispatcher-shock-relay:portfolio-git-workspace-path:15"
  },
  {
   "RuleID": "keepass-real-profile-name",
@@ -34,8 +33,7 @@
   "Secret": "infra",
   "File": "config/auto-pass.example.ini",
   "SymlinkFile": "",
-  "Commit": "c73b3f6385ec8eb3b499ab67f0718506eede713a",
-  "Link": "https://github.com/casonk/shock-relay/blob/c73b3f6385ec8eb3b499ab67f0718506eede713a/config/auto-pass.example.ini#L5",
+  "Commit": "0f19e56131b4d0299e6d25065119ce2d7e292df4",
   "Entropy": 2.321928,
   "Author": "casonk",
   "Email": "72440835+casonk@users.noreply.github.com",
@@ -45,6 +43,6 @@
    "keepass",
    "sensitive-config"
   ],
-  "Fingerprint": "c73b3f6385ec8eb3b499ab67f0718506eede713a:config/auto-pass.example.ini:keepass-real-profile-name:5"
+  "Fingerprint": "0f19e56131b4d0299e6d25065119ce2d7e292df4:config/auto-pass.example.ini:keepass-real-profile-name:5"
  }
 ]
