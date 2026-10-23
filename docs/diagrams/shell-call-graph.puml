@@ -1,16 +1,16 @@
 @startuml
-title shock-relay Shell Script Flow
+title checkout Shell Script Flow
 left to right direction
 skinparam shadowing false
 skinparam defaultFontName Monospace
 skinparam componentStyle rectangle
 skinparam linetype ortho
-rectangle "scripts/nm-dispatcher-shock-relay\n0 local shell edges\n3 external tools" as shell_scripts_nm_dispatcher_shock_relay #DBEAFE
-rectangle "scripts/run_tachometer_profile.sh\n0 local shell edges\n3 external tools" as shell_scripts_run_tachometer_profile_sh #DBEAFE
+rectangle "scripts/nm-dispatcher-shock-relay\n0 local shell edges\n2 external tools" as shell_scripts_nm_dispatcher_shock_relay #DBEAFE
+rectangle "scripts/run_tachometer_profile.sh\n0 local shell edges\n1 external tool" as shell_scripts_run_tachometer_profile_sh #DBEAFE
 rectangle "services/signal-cli/receive_messages.sh\n0 local shell edges\n2 external tools" as shell_services_signal_cli_receive_messages_sh #DBEAFE
 rectangle "services/signal-cli/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_signal_cli_send_message_sh #DBEAFE
-rectangle "services/signal-cli/test_send_receive_confirm.sh\n0 local shell edges\n5 external tools" as shell_services_signal_cli_test_send_receive_confirm_sh #DBEAFE
-rectangle "services/telegram/common.sh\n0 local shell edges\n30 external tools" as shell_services_telegram_common_sh #DBEAFE
+rectangle "services/signal-cli/test_send_receive_confirm.sh\n0 local shell edges\n3 external tools" as shell_services_signal_cli_test_send_receive_confirm_sh #DBEAFE
+rectangle "services/telegram/common.sh\n0 local shell edges\n29 external tools" as shell_services_telegram_common_sh #DBEAFE
 rectangle "services/telegram/receive_messages.sh\n0 local shell edges\n3 external tools" as shell_services_telegram_receive_messages_sh #DBEAFE
 rectangle "services/telegram/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_telegram_send_message_sh #DBEAFE
 rectangle "services/telegram/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_telegram_test_send_receive_confirm_sh #DBEAFE
@@ -23,7 +23,6 @@ rectangle "services/whatsapp/receive_messages.sh\n0 local shell edges\n3 externa
 rectangle "services/whatsapp/send_message.sh\n0 local shell edges\n2 external tools" as shell_services_whatsapp_send_message_sh #DBEAFE
 rectangle "services/whatsapp/test_send_receive_confirm.sh\n0 local shell edges\n6 external tools" as shell_services_whatsapp_test_send_receive_confirm_sh #DBEAFE
 cloud "!in_single" as tool_in_single #FEF3C7
-cloud "awk" as tool_awk #FEF3C7
 cloud "cat" as tool_cat #FEF3C7
 cloud "ch" as tool_ch #FEF3C7
 cloud "curl" as tool_curl #FEF3C7
@@ -34,7 +33,6 @@ cloud "depth++" as tool_depth_2 #FEF3C7
 cloud "depth--" as tool_depth_3 #FEF3C7
 cloud "end" as tool_end #FEF3C7
 cloud "full_key" as tool_full_key #FEF3C7
-cloud "head" as tool_head #FEF3C7
 cloud "i" as tool_i #FEF3C7
 cloud "in_double" as tool_in_double #FEF3C7
 cloud "in_single" as tool_in_single_2 #FEF3C7
@@ -52,18 +50,15 @@ cloud "reduce" as tool_reduce #FEF3C7
 cloud "result" as tool_result #FEF3C7
 cloud "rg" as tool_rg #FEF3C7
 cloud "rm" as tool_rm #FEF3C7
-cloud "run" as tool_run #FEF3C7
 cloud "s" as tool_s #FEF3C7
 cloud "sed" as tool_sed #FEF3C7
 cloud "separator" as tool_separator #FEF3C7
 cloud "signal-cli" as tool_signal_cli #FEF3C7
 cloud "sleep" as tool_sleep #FEF3C7
 cloud "su" as tool_su #FEF3C7
-cloud "summarize" as tool_summarize #FEF3C7
 cloud "tachometer" as tool_tachometer #FEF3C7
 cloud "telegram_load_config" as tool_telegram_load_config #FEF3C7
 cloud "telegram_send_message_request" as tool_telegram_send_message_request #FEF3C7
-cloud "tonumber" as tool_tonumber #FEF3C7
 cloud "tostring" as tool_tostring #FEF3C7
 cloud "tr" as tool_tr #FEF3C7
 cloud "trimmed" as tool_trimmed #FEF3C7
@@ -72,20 +67,14 @@ cloud "twilio_send_sms_request" as tool_twilio_send_sms_request #FEF3C7
 cloud "value" as tool_value #FEF3C7
 cloud "whatsapp_load_config" as tool_whatsapp_load_config #FEF3C7
 cloud "whatsapp_send_message_request" as tool_whatsapp_send_message_request #FEF3C7
-cloud "who" as tool_who #FEF3C7
 cloud "yes" as tool_yes #FEF3C7
 shell_scripts_nm_dispatcher_shock_relay --> tool_python3
 shell_scripts_nm_dispatcher_shock_relay --> tool_su
-shell_scripts_nm_dispatcher_shock_relay --> tool_who
-shell_scripts_run_tachometer_profile_sh --> tool_run
-shell_scripts_run_tachometer_profile_sh --> tool_summarize
 shell_scripts_run_tachometer_profile_sh --> tool_tachometer
 shell_services_signal_cli_receive_messages_sh --> tool_python3
 shell_services_signal_cli_receive_messages_sh --> tool_signal_cli
 shell_services_signal_cli_send_message_sh --> tool_python3
 shell_services_signal_cli_send_message_sh --> tool_signal_cli
-shell_services_signal_cli_test_send_receive_confirm_sh --> tool_awk
-shell_services_signal_cli_test_send_receive_confirm_sh --> tool_head
 shell_services_signal_cli_test_send_receive_confirm_sh --> tool_python3
 shell_services_signal_cli_test_send_receive_confirm_sh --> tool_rg
 shell_services_signal_cli_test_send_receive_confirm_sh --> tool_signal_cli
@@ -115,7 +104,6 @@ shell_services_telegram_common_sh --> tool_result
 shell_services_telegram_common_sh --> tool_rm
 shell_services_telegram_common_sh --> tool_s
 shell_services_telegram_common_sh --> tool_separator
-shell_services_telegram_common_sh --> tool_tonumber
 shell_services_telegram_common_sh --> tool_trimmed
 shell_services_telegram_common_sh --> tool_value
 shell_services_telegram_common_sh --> tool_yes
@@ -217,6 +205,6 @@ shell_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_mess
 note as shellGraphSummary
 Scanned 17 shell scripts.
 Detected 0 local shell edges.
-Detected 52 external tools.
+Detected 46 external tools.
 end note
 @enduml

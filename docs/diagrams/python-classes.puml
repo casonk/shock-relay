@@ -1,4 +1,4 @@
-@startuml classes_shock-relay
+@startuml classes_checkout
 set namespaceSeparator none
 class "<color:red>QueueError</color>" as offline_queue.QueueError {
 }
