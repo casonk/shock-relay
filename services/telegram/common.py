@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+ENTRY_NOT_FOUND_MARKERS = ("not found", "no entry", "could not find")
+DEFAULT_KEEPASS_PROFILE = "infra"
+
 
 class ConfigError(RuntimeError):
     pass
@@ -52,6 +55,32 @@ def default_config_path() -> str:
     )
 
 
+def _resolve_keepass_value(entry: str, field: str, profile: str = DEFAULT_KEEPASS_PROFILE) -> str:
+    """Resolve one field of a KeePassXC entry through the auto-pass sibling repo."""
+    import sys as _sys
+
+    _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
+    _src = str(_ap_root / "src")
+    if _src not in _sys.path:
+        _sys.path.insert(0, _src)
+    from auto_pass.envfile import load_config_environment  # noqa: PLC0415
+    from auto_pass.keepassxc import (
+        KeepassCommandError,  # noqa: PLC0415
+        resolve_keepassxc_entry,  # noqa: PLC0415
+    )
+
+    _ap_env = _ap_root / "config" / "auto-pass.env.local"
+    if _ap_env.is_file():
+        load_config_environment(_ap_env, profile=profile or None)
+    try:
+        result = resolve_keepassxc_entry(entry, attrs_map={"value": field})
+    except KeepassCommandError as exc:
+        if any(marker in str(exc).lower() for marker in ENTRY_NOT_FOUND_MARKERS):
+            raise ConfigError(f"KeePass entry {entry!r} was not found") from exc
+        raise
+    return result.get("value", "")
+
+
 def load_config(config_path: str) -> TelegramConfig:
     try:
         config_text = Path(config_path).read_text(encoding="utf-8")
@@ -71,9 +100,24 @@ def load_config(config_path: str) -> TelegramConfig:
         field_name="telegram.bot_token_env",
         required=False,
     )
+    keepass_entry = optional_string(telegram_cfg.get("bot_token_keepass_entry"))
+    if not bot_token and keepass_entry:
+        # Last resort, after a literal token and the environment variable: the vault.
+        try:
+            bot_token = _resolve_keepass_value(
+                keepass_entry,
+                optional_string(telegram_cfg.get("bot_token_keepass_field")) or "password",
+                optional_string(config.get("keepass_profile")) or DEFAULT_KEEPASS_PROFILE,
+            )
+        except Exception as exc:  # noqa: BLE001 - any vault failure is a config error
+            raise ConfigError(
+                f"ERROR: Cannot read the Telegram bot token from KeePass entry "
+                f"{keepass_entry!r}: {exc}"
+            ) from exc
     if not bot_token:
         raise ConfigError(
-            "ERROR: Missing telegram.bot_token or telegram.bot_token_env in config.local.yaml"
+            "ERROR: Missing telegram.bot_token, telegram.bot_token_env or "
+            "telegram.bot_token_keepass_entry in config.local.yaml"
         )
 
     timeout_seconds = parse_int(
