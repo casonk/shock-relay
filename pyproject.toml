@@ -20,6 +20,7 @@ classifiers = [
   "Topic :: Communications",
   "Topic :: Utilities",
   "License :: OSI Approved :: MIT License",
+  "Private :: Do Not Upload",
 ]
 
 [project.urls]
