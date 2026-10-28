@@ -10,7 +10,9 @@
 
 ## Public Datasets and APIs
 
+- https://api.telegram.org - Telegram Bot API base URL used by the Telegram provider backend
 - https://core.telegram.org/bots/api - Telegram Bot API reference
+- https://api.twilio.com - Twilio REST API base URL used by the Twilio SMS provider backend
 - https://www.twilio.com/docs/messaging - Twilio SMS API and messaging documentation
 - https://developers.google.com/gmail/imap/imap-smtp - Gmail IMAP/SMTP reference
 
