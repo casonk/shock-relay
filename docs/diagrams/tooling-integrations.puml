@@ -1,5 +1,5 @@
 @startuml
-title shock-relay Tooling Integrations
+title checkout Tooling Integrations
 left to right direction
 skinparam shadowing false
 skinparam defaultFontName Monospace
@@ -7,12 +7,12 @@ skinparam componentStyle rectangle
 skinparam linetype ortho
 rectangle ".github/workflows/ci.yml\n2 detected tools" as source_github_workflows_ci_yml #E0F2FE
 rectangle ".github/workflows/secret-scan.yml\n1 detected tool" as source_github_workflows_secret_scan_yml #E0F2FE
-rectangle "scripts/nm-dispatcher-shock-relay\n3 detected tools" as source_scripts_nm_dispatcher_shock_relay #E0F2FE
-rectangle "scripts/run_tachometer_profile.sh\n3 detected tools" as source_scripts_run_tachometer_profile_sh #E0F2FE
+rectangle "scripts/nm-dispatcher-shock-relay\n2 detected tools" as source_scripts_nm_dispatcher_shock_relay #E0F2FE
+rectangle "scripts/run_tachometer_profile.sh\n1 detected tool" as source_scripts_run_tachometer_profile_sh #E0F2FE
 rectangle "services/signal-cli/receive_messages.sh\n2 detected tools" as source_services_signal_cli_receive_messages_sh #E0F2FE
 rectangle "services/signal-cli/send_message.sh\n2 detected tools" as source_services_signal_cli_send_message_sh #E0F2FE
-rectangle "services/signal-cli/test_send_receive_confirm.sh\n5 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
-rectangle "services/telegram/common.sh\n30 detected tools" as source_services_telegram_common_sh #E0F2FE
+rectangle "services/signal-cli/test_send_receive_confirm.sh\n3 detected tools" as source_services_signal_cli_test_send_receive_confirm_sh #E0F2FE
+rectangle "services/telegram/common.sh\n29 detected tools" as source_services_telegram_common_sh #E0F2FE
 rectangle "services/telegram/receive_messages.sh\n3 detected tools" as source_services_telegram_receive_messages_sh #E0F2FE
 rectangle "services/telegram/send_message.sh\n2 detected tools" as source_services_telegram_send_message_sh #E0F2FE
 rectangle "services/telegram/test_send_receive_confirm.sh\n6 detected tools" as source_services_telegram_test_send_receive_confirm_sh #E0F2FE
@@ -25,7 +25,6 @@ rectangle "services/whatsapp/receive_messages.sh\n3 detected tools" as source_se
 rectangle "services/whatsapp/send_message.sh\n2 detected tools" as source_services_whatsapp_send_message_sh #E0F2FE
 rectangle "services/whatsapp/test_send_receive_confirm.sh\n6 detected tools" as source_services_whatsapp_test_send_receive_confirm_sh #E0F2FE
 cloud "!in_single" as tool_in_single #FEF3C7
-cloud "awk" as tool_awk #FEF3C7
 cloud "casonk/.github/.github/workflows/python-ci.yml" as tool_casonk_github_github_workflows_python_ci_yml #FEF3C7
 cloud "casonk/.github/.github/workflows/secret-scan.yml" as tool_casonk_github_github_workflows_secret_scan_yml #FEF3C7
 cloud "casonk/.github/.github/workflows/shell-ci.yml" as tool_casonk_github_github_workflows_shell_ci_yml #FEF3C7
@@ -39,7 +38,6 @@ cloud "depth++" as tool_depth_2 #FEF3C7
 cloud "depth--" as tool_depth_3 #FEF3C7
 cloud "end" as tool_end #FEF3C7
 cloud "full_key" as tool_full_key #FEF3C7
-cloud "head" as tool_head #FEF3C7
 cloud "i" as tool_i #FEF3C7
 cloud "in_double" as tool_in_double #FEF3C7
 cloud "in_single" as tool_in_single_2 #FEF3C7
@@ -57,18 +55,15 @@ cloud "reduce" as tool_reduce #FEF3C7
 cloud "result" as tool_result #FEF3C7
 cloud "rg" as tool_rg #FEF3C7
 cloud "rm" as tool_rm #FEF3C7
-cloud "run" as tool_run #FEF3C7
 cloud "s" as tool_s #FEF3C7
 cloud "sed" as tool_sed #FEF3C7
 cloud "separator" as tool_separator #FEF3C7
 cloud "signal-cli" as tool_signal_cli #FEF3C7
 cloud "sleep" as tool_sleep #FEF3C7
 cloud "su" as tool_su #FEF3C7
-cloud "summarize" as tool_summarize #FEF3C7
 cloud "tachometer" as tool_tachometer #FEF3C7
 cloud "telegram_load_config" as tool_telegram_load_config #FEF3C7
 cloud "telegram_send_message_request" as tool_telegram_send_message_request #FEF3C7
-cloud "tonumber" as tool_tonumber #FEF3C7
 cloud "tostring" as tool_tostring #FEF3C7
 cloud "tr" as tool_tr #FEF3C7
 cloud "trimmed" as tool_trimmed #FEF3C7
@@ -77,23 +72,17 @@ cloud "twilio_send_sms_request" as tool_twilio_send_sms_request #FEF3C7
 cloud "value" as tool_value #FEF3C7
 cloud "whatsapp_load_config" as tool_whatsapp_load_config #FEF3C7
 cloud "whatsapp_send_message_request" as tool_whatsapp_send_message_request #FEF3C7
-cloud "who" as tool_who #FEF3C7
 cloud "yes" as tool_yes #FEF3C7
 source_github_workflows_ci_yml --> tool_casonk_github_github_workflows_python_ci_yml
 source_github_workflows_ci_yml --> tool_casonk_github_github_workflows_shell_ci_yml
 source_github_workflows_secret_scan_yml --> tool_casonk_github_github_workflows_secret_scan_yml
 source_scripts_nm_dispatcher_shock_relay --> tool_python3
 source_scripts_nm_dispatcher_shock_relay --> tool_su
-source_scripts_nm_dispatcher_shock_relay --> tool_who
-source_scripts_run_tachometer_profile_sh --> tool_run
-source_scripts_run_tachometer_profile_sh --> tool_summarize
 source_scripts_run_tachometer_profile_sh --> tool_tachometer
 source_services_signal_cli_receive_messages_sh --> tool_python3
 source_services_signal_cli_receive_messages_sh --> tool_signal_cli
 source_services_signal_cli_send_message_sh --> tool_python3
 source_services_signal_cli_send_message_sh --> tool_signal_cli
-source_services_signal_cli_test_send_receive_confirm_sh --> tool_awk
-source_services_signal_cli_test_send_receive_confirm_sh --> tool_head
 source_services_signal_cli_test_send_receive_confirm_sh --> tool_python3
 source_services_signal_cli_test_send_receive_confirm_sh --> tool_rg
 source_services_signal_cli_test_send_receive_confirm_sh --> tool_signal_cli
@@ -123,7 +112,6 @@ source_services_telegram_common_sh --> tool_result
 source_services_telegram_common_sh --> tool_rm
 source_services_telegram_common_sh --> tool_s
 source_services_telegram_common_sh --> tool_separator
-source_services_telegram_common_sh --> tool_tonumber
 source_services_telegram_common_sh --> tool_trimmed
 source_services_telegram_common_sh --> tool_value
 source_services_telegram_common_sh --> tool_yes
@@ -224,6 +212,6 @@ source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_load_con
 source_services_whatsapp_test_send_receive_confirm_sh --> tool_whatsapp_send_message_request
 note as toolingGraphSummary
 Scanned 19 tooling entrypoints.
-Detected 55 third-party tools.
+Detected 49 third-party tools.
 end note
 @enduml
