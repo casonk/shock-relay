@@ -21,6 +21,13 @@ telegram:
   # Optional direct token field for non-env setups.
   bot_token:
 
+  # Or read the token from a KeePass entry through auto-pass (used only when
+  # neither bot_token nor the environment variable is set). The profile comes
+  # from the top-level keepass_profile (default infra); the field defaults to
+  # password.
+  bot_token_keepass_entry:
+  bot_token_keepass_field:
+
   # Optional request timeout in seconds.
   timeout_seconds: 30
 

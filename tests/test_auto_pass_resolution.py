@@ -107,3 +107,76 @@ class ShockRelayAutoPassTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TelegramTokenFromVaultTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.common = load_module_by_path(
+            REPO_ROOT / "services/telegram/common.py",
+            module_name="shock_relay_telegram_common_test",
+        )
+
+    def _config(self, directory: Path, body: str) -> str:
+        path = directory / "config.yaml"
+        path.write_text(
+            "service:\n  name: telegram\n"
+            f"telegram:\n  api_base_url: https://api.telegram.org\n{body}",
+            encoding="utf-8",
+        )
+        return str(path)
+
+    def test_the_token_is_read_from_the_vault_entry_with_profile_and_field(self) -> None:
+        import tempfile
+
+        recorder = AutoPassRecorder()
+        recorder.add_response("example/telegram-bot", {"value": "vault-token"})
+        with tempfile.TemporaryDirectory() as tmp, AutoPassPatch(recorder):
+            path = self._config(Path(tmp), "  bot_token_keepass_entry: example/telegram-bot\n")
+            config = self.common.load_config(path)
+
+        self.assertEqual(config.bot_token, "vault-token")
+        self.assertEqual(recorder.load_calls[0].profile, "infra")
+        self.assertEqual(recorder.resolve_calls[0].attrs_map, {"value": "password"})
+
+    def test_a_literal_token_or_the_environment_variable_wins_over_the_vault(self) -> None:
+        import os
+        import tempfile
+        from unittest import mock
+
+        recorder = AutoPassRecorder()
+        with tempfile.TemporaryDirectory() as tmp, AutoPassPatch(recorder):
+            literal = self._config(
+                Path(tmp),
+                "  bot_token: literal-token\n  bot_token_keepass_entry: example/telegram-bot\n",
+            )
+            self.assertEqual(self.common.load_config(literal).bot_token, "literal-token")
+            env_config = self._config(
+                Path(tmp),
+                "  bot_token_env: SYNTH_TG_TOKEN\n  bot_token_keepass_entry: example/telegram-bot\n",
+            )
+            with mock.patch.dict(os.environ, {"SYNTH_TG_TOKEN": "env-token"}):
+                self.assertEqual(self.common.load_config(env_config).bot_token, "env-token")
+
+        self.assertEqual(recorder.resolve_calls, [])
+
+    def test_a_missing_vault_entry_is_a_clear_config_error(self) -> None:
+        import tempfile
+
+        recorder = AutoPassRecorder()
+        recorder.add_response(
+            "example/telegram-bot",
+            recorder.keepass_error("Entry example/telegram-bot was not found."),
+        )
+        with tempfile.TemporaryDirectory() as tmp, AutoPassPatch(recorder):
+            path = self._config(Path(tmp), "  bot_token_keepass_entry: example/telegram-bot\n")
+            with self.assertRaisesRegex(self.common.ConfigError, "was not found"):
+                self.common.load_config(path)
+
+    def test_with_no_token_source_the_error_names_all_three(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._config(Path(tmp), "")
+            with self.assertRaisesRegex(self.common.ConfigError, "bot_token_keepass_entry"):
+                self.common.load_config(path)

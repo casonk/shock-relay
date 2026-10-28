@@ -127,6 +127,12 @@ telegram:
     insecure_skip_verify: false
 ```
 
+The bot token is read from, in order: `telegram.bot_token`, the environment variable
+named by `bot_token_env`, then the KeePass entry named by
+`telegram.bot_token_keepass_entry` (read through auto-pass, using the top-level
+`keepass_profile`, default `infra`, and the entry field `bot_token_keepass_field`,
+default `password`). Prefer the vault entry; never commit a literal token.
+
 ### WhatsApp
 
 **API Style:** Generic HTTPS gateway (Twilio adapter or self-hosted)
