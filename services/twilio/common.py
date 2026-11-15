@@ -112,7 +112,12 @@ def _resolve_keepass_value(
         return ""
     import sys as _sys
 
-    _ap_root = Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
+    # The auto-pass checkout sits next to this repository in the portfolio; AUTO_PASS_DIR points elsewhere (and lets
+    # the tests supply their own folder instead of depending on the machine's layout).
+    _ap_root = Path(
+        os.environ.get("AUTO_PASS_DIR")
+        or Path(__file__).resolve().parent.parent.parent.parent / "auto-pass"
+    )
     _src = str(_ap_root / "src")
     if _src not in _sys.path:
         _sys.path.insert(0, _src)
