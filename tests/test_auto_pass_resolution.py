@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from dyno_lab.auto_pass import AutoPassPatch, AutoPassRecorder
 from dyno_lab.module import load_module_by_path
@@ -9,7 +12,21 @@ from dyno_lab.module import load_module_by_path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def fake_auto_pass_dir(test: unittest.TestCase) -> Path:
+    """A stand-in for the sibling auto-pass checkout, so the tests do not depend on this machine's layout."""
+    root = Path(tempfile.mkdtemp()) / "auto-pass"
+    (root / "config").mkdir(parents=True)
+    (root / "config" / "auto-pass.env.local").write_text("", encoding="utf-8")
+    patcher = mock.patch.dict(os.environ, {"AUTO_PASS_DIR": str(root)})
+    patcher.start()
+    test.addCleanup(patcher.stop)
+    return root
+
+
 class ShockRelayAutoPassTests(unittest.TestCase):
+    def setUp(self) -> None:
+        fake_auto_pass_dir(self)
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.gmail_common = load_module_by_path(
@@ -110,6 +127,9 @@ if __name__ == "__main__":
 
 
 class TelegramTokenFromVaultTests(unittest.TestCase):
+    def setUp(self) -> None:
+        fake_auto_pass_dir(self)
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.common = load_module_by_path(
