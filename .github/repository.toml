@@ -4,6 +4,7 @@
 [repository]
 # One line shown on GitHub. Keep it free of private repository names and local paths.
 description = "shock-relay is an open messaging relay for automation scripts, agents, and infrastructure. It provides a unified way to send notifications across platforms like Signal, Telegram, WhatsApp, SMS, and email through one consistent interface."
+topics = ["messaging", "signal", "telegram", "twilio", "email", "python", "automation", "k3s"]
 
 [main_branch]
 # Direct commits and pushes to main are refused unless this is true.
