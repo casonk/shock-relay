@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-# handover.sh pod-on|pod-off — start or suspend the CronJob. No sudo.
-# The host timer and the pod must never both send: deploy.sh disables the timer before pod-on and suspends the
-# pod before it enables the timer. (A queued entry is removed under a lock when it is taken, so a collision
-# cannot send it twice, but it is still wrong to run both.)
+# handover.sh pod-on|pod-off — make the host unit run the work in K3s, or on the host again. No sudo.
+# pod-on installs a systemd drop-in that replaces only ExecStart (run-job.sh); the timer, the job guard,
+# the resource arbiter and any post-step are untouched. pod-off removes the drop-in. The CronJob stays suspended.
 set -euo pipefail
-export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/k3s.yaml}"
-KUBECTL="${KUBECTL:-kubectl}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/shock-relay-gmail-digest.service.d"
+DROPIN="$UNIT_DIR/20-k3s-run.conf"
 case "${1:-}" in
-  pod-on)  "$KUBECTL" -n shock-relay patch cronjob shock-relay-digest -p '{"spec":{"suspend":false}}' ;;
-  pod-off) "$KUBECTL" -n shock-relay patch cronjob shock-relay-digest -p '{"spec":{"suspend":true}}' ;;
+  pod-on)
+    kubectl_bin="$(command -v "${KUBECTL:-kubectl}")"
+    mkdir -p "$UNIT_DIR"
+    sed -e "s#__REPO__#$REPO#g" -e "s#__KUBECTL__#$kubectl_bin#g" "$HERE/systemd/20-k3s-run.conf" >"$DROPIN"
+    systemctl --user daemon-reload
+    ;;
+  pod-off)
+    rm -f "$DROPIN"
+    systemctl --user daemon-reload
+    ;;
   *) echo "usage: $0 pod-on|pod-off"; exit 2 ;;
 esac

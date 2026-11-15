@@ -8,7 +8,7 @@ jobs add to and sends them as one email. It runs three ways. You choose with one
 |---|---|---|---|
 | `dev` (default) | send the queued digest once, in the foreground | Python 3.10+ | trying it, developing |
 | `host` | the Clockwork-managed systemd user timer, hourly | Python, systemd, Clockwork | a machine that sends day to day |
-| `k3s` | a CronJob in K3s with default-deny egress | K3s, podman, kubectl, the in-cluster registry | keeping Gmail credentials out of the host's process space |
+| `k3s` | the same host timer triggers the send, which runs in a pod with default-deny egress | K3s, podman, kubectl, the in-cluster registry | keeping Gmail credentials out of the host's process space |
 
 The sender's code is the same in all three. The pod differs by *configuration*: credentials arrive as
 environment variables, and one setting (below) makes it ignore host paths.
@@ -46,8 +46,11 @@ see the changelog).
 `up` refuses to start, and changes nothing, unless kubectl, podman and the in-cluster registry are present. Then it
 runs, in order: `prepare-host.sh` (label the queue folder for containers), `build-image.sh` (refuses uncommitted
 `services/gmail-imap`), `apply.sh` (resolves the Gmail credentials from your vault **on the host**, creates two
-Secrets, the volume, the network policy and the CronJob **suspended**), `verify.sh` (must pass), and only then
-disables the host timer and unsuspends the CronJob. A failed step changes nothing: the timer keeps sending.
+Secrets, the volume, the network policy and the CronJob, which is only a **suspended template**), `verify.sh` (must
+pass), and only then installs a systemd drop-in that replaces the unit's `ExecStart` with `deploy/k3s/run-job.sh`.
+**The host timer stays the trigger**, so its job guard and resource limits keep applying (a CronJob would bypass them);
+`run-job.sh` creates one Job from the template, streams its log into the journal and exits with the job's status.
+A failed step changes nothing: the unit keeps sending from the host.
 
 ## What the pod can reach
 
@@ -66,14 +69,13 @@ disables the host timer and unsuspends the CronJob. A failed step changes nothin
 |---|---|---|
 | dev | host | `deploy/deploy.sh --mode host up` |
 | host | k3s | `deploy/deploy.sh --mode k3s up` (verifies first, then hands over) |
-| k3s | host | `deploy/deploy.sh --mode host up` (suspends the CronJob, re-enables the timer) |
+| k3s | host | `deploy/deploy.sh --mode host up` (removes the drop-in; the unit sends from the host again) |
 | any | stopped | `--mode host down`, or nothing to stop in dev |
 
 `--mode k3s down` is the same as `--mode host up`. The CronJob is left in place, suspended (`kubectl delete ns
 shock-relay` removes it). A marker in `~/.local/state/shock-relay/` records that the pod was last handed the work.
-Unsuspending a CronJob runs the most recent slot missed in the last 15 minutes, so one hourly slot can be sent
-by both the timer and the pod around a hand-over. A queued entry is removed under a lock when it is taken, so it
-is never sent twice.
+The CronJob never schedules itself, so a hand-over cannot replay a missed slot. A queued entry is removed under a lock
+when it is taken, so it is never sent twice.
 
 ## Settings that differ by mode
 

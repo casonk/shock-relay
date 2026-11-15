@@ -71,9 +71,9 @@ case "$cmd:$mode" in
   # ---- host: the Clockwork-managed systemd user timer, hourly ----
   up:host)
     if marker_is_k3s; then
-      echo "the K3s sender is active; suspending it before the host timer starts"
+      echo "the K3s sender is active; switching the unit back to send from the host"
       if command -v "${KUBECTL:-kubectl}" >/dev/null 2>&1; then "$K3S_DIR/handover.sh" pod-off
-      else echo "kubectl is not installed: suspend the CronJob yourself (docs/deployment.md) or both will send" >&2; exit 1; fi
+      else echo "kubectl is not installed: remove the unit's k3s drop-in yourself (docs/deployment.md) or the pod keeps sending" >&2; exit 1; fi
     fi
     timer_installed || {
       echo "$TIMER is not installed. Install it with Clockwork from its examples/shock-relay/gmail-digest.toml (see docs/deployment.md)" >&2
@@ -86,7 +86,10 @@ case "$cmd:$mode" in
   status:host) show_timer ;;
   verify:host) systemctl --user is-active --quiet "$TIMER" && echo "$TIMER is active" ;;
 
-  # ---- k3s: a CronJob, with default-deny egress and the queue kept on the host ----
+  # ---- k3s: the host timer stays the trigger; only the work moves into a pod ----
+  # The digest unit carries the portfolio's job guard and resource limits, which a CronJob would bypass. So the
+  # timer and unit stay as they are and only ExecStart changes: a removable drop-in runs run-job.sh, which creates
+  # one Job from the suspended CronJob template and waits for it.
   up:k3s)
     need "${KUBECTL:-kubectl}" "k3s mode needs kubectl and a running K3s (see docs/deployment.md). dev and host modes need neither."
     need podman "k3s mode needs podman, to build the image"
@@ -95,16 +98,20 @@ case "$cmd:$mode" in
       echo "k3s mode needs the in-cluster registry: run install-registry.sh and enable-registry-mirror.sh from crew-chief's deploy/k3s" >&2
       exit 1
     }
+    timer_installed || {
+      echo "$TIMER is not installed: k3s mode keeps the host timer as the trigger. Install it with Clockwork (see docs/deployment.md)" >&2
+      exit 1
+    }
     "$K3S_DIR/prepare-host.sh"
     "$K3S_DIR/build-image.sh"
     "$K3S_DIR/apply.sh"
     "$K3S_DIR/verify.sh"
-    # Hand over only after verify passed: the timer keeps sending until the pod is proven.
-    systemctl --user disable --now "$TIMER" 2>/dev/null || true
+    # Switch the unit over only after verify passed: until then the host sends as before.
     "$K3S_DIR/handover.sh" pod-on
+    systemctl --user enable --now "$TIMER"
     set_marker k3s
     ;;
-  down:k3s) "$0" --mode host up; echo "rolled back to the host timer; the CronJob is suspended and left in place (kubectl delete ns shock-relay removes it)" ;;
+  down:k3s) "$0" --mode host up; echo "rolled back: the unit sends from the host again; the CronJob template is left in place (kubectl delete ns shock-relay removes it)" ;;
   status:k3s)
     show_timer
     KUBECONFIG="${KUBECONFIG:-$HOME/.kube/k3s.yaml}" "${KUBECTL:-kubectl}" -n shock-relay get cronjob,pods 2>&1 || true ;;
