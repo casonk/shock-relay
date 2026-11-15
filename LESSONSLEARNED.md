@@ -54,3 +54,10 @@ Unlike `CHATHISTORY.md`, this file should keep only reusable lessons that should
   source-dependency. Load the reviewed runtime at the feature boundary and
   return an actionable setup error when it is absent, so ordinary CLI installs
   and public CI remain reproducible.
+
+### 2026-11-15 — Tests that depend on the machine's layout, and the digest in K3s
+
+- Tests must not rely on a gitignored file in a sibling checkout. The vault-resolution tests passed only inside the
+  portfolio layout; the location is now overridable with `AUTO_PASS_DIR` and the tests supply their own folder.
+- The digest unit runs under the portfolio's job guard and resource limits, which a CronJob would bypass. Keep the host
+  timer as the trigger and swap only `ExecStart` for a runner that creates one Job from a suspended CronJob template.
