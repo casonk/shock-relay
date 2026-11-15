@@ -1,0 +1,39 @@
+# A short-lived pod with the sender's labels, volumes, environment and security context, for verify.sh only.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shock-relay-verify
+  namespace: shock-relay
+  labels: {app: shock-relay-digest}
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  activeDeadlineSeconds: 600
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile: {type: RuntimeDefault}
+  containers:
+    - name: verify
+      image: localhost:5000/shock-relay-digest:k3s
+      imagePullPolicy: Always
+      command: ["sleep", "600"]
+      envFrom:
+        - secretRef: {name: shock-relay-env}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: {drop: [ALL]}
+      volumeMounts:
+        - {name: queue, mountPath: /queue}
+        - {name: config, mountPath: /etc/shock-relay, readOnly: true}
+        - {name: tmp, mountPath: /tmp}
+  volumes:
+    - name: queue
+      persistentVolumeClaim: {claimName: queue}
+    - name: config
+      secret: {secretName: shock-relay-config, defaultMode: 0444}
+    - name: tmp
+      emptyDir: {sizeLimit: 16Mi}

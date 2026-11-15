@@ -221,3 +221,6 @@ CLAUDE.md
 .tachometer/
 
 /REFS-LOCAL.md
+
+# Which way the digest sender runs on this machine (deploy/deploy.sh)
+config/deploy.local.env

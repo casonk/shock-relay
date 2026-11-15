@@ -1,0 +1,28 @@
+# The host's digest queue folder as a local volume. Rendered by apply.sh, which fills the machine-specific path
+# and node name, so neither is committed. Retain: deleting the claim never deletes the queue.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shock-relay-queue
+spec:
+  capacity: {storage: 1Gi}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-host
+  volumeMode: Filesystem
+  claimRef: {namespace: shock-relay, name: queue}
+  local: {path: "__QUEUE_DIR__"}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - {key: kubernetes.io/hostname, operator: In, values: ["__NODE__"]}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: queue, namespace: shock-relay}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-host
+  volumeName: shock-relay-queue
+  resources: {requests: {storage: 1Gi}}

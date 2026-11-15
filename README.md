@@ -18,6 +18,14 @@ Telegram / WhatsApp / Twilio each expose shared HTTP helper layers plus Python
 and shell entrypoints, and Gmail IMAP keeps its own IMAP/SMTP helper layer.
 That service-specific CLI surface is the stable interface today.
 
+## Ways to run the digest sender
+
+One command, one setting: `deploy/deploy.sh up`. The mode is `dev` (one send in the foreground, Python only, the
+default), `host` (a Clockwork systemd timer) or `k3s` (a CronJob in K3s with default-deny egress, optional). Only
+`k3s` needs a cluster, and switching never leaves two senders running. Choose with `--mode`,
+`SHOCK_RELAY_DEPLOY_MODE`, or `config/deploy.example.env` copied to `config/deploy.local.env`. Full guide:
+[`docs/deployment.md`](docs/deployment.md).
+
 ## Supported Services
 
 - **Signal** (via signal-cli) - Fully implemented with send/receive capabilities

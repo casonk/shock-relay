@@ -1,0 +1,34 @@
+# Default-deny for the digest sender, then only Gmail's SMTP and IMAP (the sender verifies that Gmail kept a sent
+# copy). Deny rules win over allows in Cilium, so a later allow added by mistake cannot open the host or the cluster.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: shock-relay-egress
+  namespace: shock-relay
+spec:
+  endpointSelector:
+    matchLabels: {app: shock-relay-digest}
+  ingressDeny:
+    - fromEntities: [all]
+  egressDeny:
+    - toEntities: [host, remote-node, kube-apiserver, health]
+    - toCIDR: ["169.254.0.0/16"]
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports: [{port: "53", protocol: ANY}]
+          rules:
+            dns:
+              - matchName: smtp.gmail.com
+              - matchName: imap.gmail.com
+    - toFQDNs:
+        - matchName: smtp.gmail.com
+      toPorts:
+        - ports: [{port: "465", protocol: TCP}, {port: "587", protocol: TCP}]
+    - toFQDNs:
+        - matchName: imap.gmail.com
+      toPorts:
+        - ports: [{port: "993", protocol: TCP}]
