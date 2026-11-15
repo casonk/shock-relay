@@ -46,8 +46,12 @@ def test_the_namespace_enforces_the_restricted_pod_security_standard():
 
 def test_the_cronjob_is_a_suspended_template_that_never_schedules_and_never_overlaps_itself():
     (cron,) = docs("20-cronjob.yaml")
-    assert cron["spec"]["suspend"] is True, "only a template: the host timer triggers each run (run-job.sh)"
-    assert cron["spec"]["schedule"] == "0 0 31 2 *", "a date that never occurs, so it can never run by itself"
+    assert (
+        cron["spec"]["suspend"] is True
+    ), "only a template: the host timer triggers each run (run-job.sh)"
+    assert (
+        cron["spec"]["schedule"] == "0 0 31 2 *"
+    ), "a date that never occurs, so it can never run by itself"
     assert cron["spec"]["concurrencyPolicy"] == "Forbid"
     assert cron["spec"]["jobTemplate"]["spec"]["activeDeadlineSeconds"] <= 900
 

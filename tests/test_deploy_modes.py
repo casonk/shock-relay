@@ -332,7 +332,9 @@ def test_the_dropin_replaces_only_execstart():
     body = [line for line in text.splitlines() if line and not line.startswith("#")]
     keys = {line.split("=", 1)[0] for line in body if "=" in line}
     assert keys <= {"Environment", "ExecStart"}, keys
-    assert body.index("ExecStart=") < max(i for i, line in enumerate(body) if line.startswith("ExecStart=/"))
+    assert body.index("ExecStart=") < max(
+        i for i, line in enumerate(body) if line.startswith("ExecStart=/")
+    )
 
 
 def test_handover_installs_and_removes_the_dropin(tmp_path):
@@ -341,9 +343,20 @@ def test_handover_installs_and_removes_the_dropin(tmp_path):
         stub.parent.mkdir(exist_ok=True)
         stub.write_text("#!/bin/sh\nexit 0\n")
         stub.chmod(0o755)
-    env = {**os.environ, "PATH": f"{tmp_path / 'bin'}:{os.environ['PATH']}", "XDG_CONFIG_HOME": str(tmp_path / "cfg")}
+    env = {
+        **os.environ,
+        "PATH": f"{tmp_path / 'bin'}:{os.environ['PATH']}",
+        "XDG_CONFIG_HOME": str(tmp_path / "cfg"),
+    }
     script = str(REPO / "deploy" / "k3s" / "handover.sh")
-    dropin = tmp_path / "cfg" / "systemd" / "user" / "shock-relay-gmail-digest.service.d" / "20-k3s-run.conf"
+    dropin = (
+        tmp_path
+        / "cfg"
+        / "systemd"
+        / "user"
+        / "shock-relay-gmail-digest.service.d"
+        / "20-k3s-run.conf"
+    )
     subprocess.run(["bash", script, "pod-on"], env=env, check=True)
     text = dropin.read_text()
     assert "run-job.sh" in text and "__" not in text
@@ -362,7 +375,11 @@ def test_run_job_reports_the_jobs_status(tmp_path):
     )
     kubectl.chmod(0o755)
     env = {**os.environ, "KUBECTL": str(kubectl), "KUBECONFIG": "/nonexistent"}
-    done = subprocess.run(["bash", str(REPO / "deploy" / "k3s" / "run-job.sh")], env=env, capture_output=True, text=True)
+    done = subprocess.run(
+        ["bash", str(REPO / "deploy" / "k3s" / "run-job.sh")],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
     assert done.returncode == 1 and "failed" in done.stderr
     assert "create job" in log.read_text()
-
