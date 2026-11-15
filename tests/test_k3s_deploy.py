@@ -250,3 +250,16 @@ def test_the_generator_writes_owner_only_files_and_prints_no_value(
         assert (out / name).stat().st_mode & 0o777 == 0o600
     assert "very-secret-pw" in (out / "env").read_text()
     assert "very-secret-pw" not in (out / "config.yaml").read_text()
+
+
+def test_verify_waits_for_the_previous_pod_to_be_gone_before_creating_the_next():
+    # A second run within a minute exec'd into the first run's pod while it was still terminating (its sleep
+    # ignores SIGTERM) and reported failures that were not real. Wait for deletion, and make the pod die at once.
+    text = (DEPLOY / "verify.sh").read_text()
+    waited = text.index("--wait=true")
+    created = text.index("kubectl apply -f")
+    # the wait must come before the new pod is created
+    assert waited < created
+    assert "clear_previous" in text
+    pod = yaml.safe_load((MANIFESTS / "verify-pod.yaml").read_text())
+    assert pod["spec"]["terminationGracePeriodSeconds"] == 0

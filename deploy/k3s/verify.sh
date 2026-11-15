@@ -9,8 +9,16 @@ QUEUE="${SHOCK_RELAY_GMAIL_DIGEST_DIR:-$HOME/.local/share/shock-relay}/gmail-dig
 fail=0
 ok()  { echo "ok    $*"; }
 bad() { echo "FAIL  $*"; fail=1; }
+# shellcheck disable=SC2329  # invoked by the EXIT trap below
 cleanup() { kubectl -n "$NS" delete pod "$POD" --ignore-not-found --wait=false >/dev/null 2>&1; }
-trap cleanup EXIT; cleanup; sleep 2
+trap cleanup EXIT
+# A previous run's pod may still be terminating (its `sleep` ignores SIGTERM), and exec'ing into it fails in
+# confusing ways. Wait until it is gone before creating the next one.
+clear_previous() {
+  kubectl -n "$NS" delete pod "$POD" --ignore-not-found --wait=true --timeout=120s >/dev/null 2>&1 || true
+}
+clear_previous
+
 
 kubectl apply -f "$HERE/manifests/verify-pod.yaml" >/dev/null
 if ! kubectl -n "$NS" wait --for=condition=Ready "pod/$POD" --timeout=120s >/dev/null 2>&1; then

@@ -4,6 +4,7 @@ All notable changes to `shock-relay` are documented here.
 
 ## Unreleased
 
+- `deploy/k3s/verify.sh` waits for a previous verification pod to be fully gone before creating the next (its `sleep` ignored SIGTERM, so a second run within a minute exec'd into a terminating pod and reported false failures), and the verification pod now has a zero grace period.
 - Deployment modes for the digest sender behind one setting: `deploy/deploy.sh [--mode dev|host|k3s] up|down|status|verify|mode`, with the mode from `--mode`, `SHOCK_RELAY_DEPLOY_MODE`, or `config/deploy.local.env` (example: `config/deploy.example.env`, gitignored), defaulting to `dev`. Only `k3s` touches kubectl, podman or a cluster. In K3s the sender is an hourly CronJob created suspended, with default-deny egress to Gmail SMTP and IMAP only, the Gmail credentials resolved from the vault on the host into a Secret (the pod config names environment variables and holds no credential), and the queue folder kept on the host. Hand-over happens only after `verify.sh` passes. `docs/deployment.md` explains each mode and how to switch.
 
 - Fix `send_digest.py --dry-run` deleting queued notifications: it popped the entries and never put them back,
