@@ -300,3 +300,9 @@ def test_the_local_config_is_gitignored_and_the_example_and_docs_cover_every_mod
     ):
         assert needle in docs, needle
     assert "docs/deployment.md" in (REPO / "README.md").read_text()
+
+
+def test_the_restore_trap_fires_for_failures_inside_functions():
+    # Without `set -E` bash does not inherit an ERR trap into functions, so a failure inside a function skips the
+    # restore. The portfolio's deployment-modes contract requires set -eEuo pipefail.
+    assert "set -eEuo pipefail" in DEPLOY.read_text()

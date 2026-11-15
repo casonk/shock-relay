@@ -11,7 +11,8 @@
 #
 # This covers the hourly digest sender (services/gmail-imap/send_digest.py). Only k3s mode touches kubectl,
 # podman or a cluster. See docs/deployment.md for what each mode needs, does, and how to switch.
-set -euo pipefail
+# -E: an ERR trap must also fire for failures inside functions.
+set -eEuo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
