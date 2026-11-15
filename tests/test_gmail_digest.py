@@ -138,3 +138,92 @@ def test_send_digest_requeues_group_when_send_fails(tmp_path):
     assert result["requeued"] == 1
     assert "smtp down" in result["errors"][0]
     assert len(digest_queue.load_entries(queue_file=queue_file)) == 1
+
+
+def _digest_modules(tag):
+    queue = _load(
+        f"shock_relay_digest_queue_{tag}", REPO_ROOT / "services/gmail-imap/digest_queue.py"
+    )
+    send = _load(f"shock_relay_send_digest_{tag}", REPO_ROOT / "services/gmail-imap/send_digest.py")
+    return queue, send
+
+
+def _enqueue(queue, queue_file, *, config="/host/only/config.local.yaml", n=2):
+    for i in range(n):
+        queue.enqueue_digest(
+            to_addresses=["me@example.com"],
+            subject=f"item {i}",
+            body="body",
+            config_path=config,
+            service="svc",
+            queue_file=queue_file,
+        )
+
+
+def test_a_dry_run_reports_the_digest_and_leaves_the_queue_untouched(tmp_path, capsys):
+    queue, send = _digest_modules("dry")
+    queue_file = tmp_path / "digest.jsonl"
+    _enqueue(queue, queue_file, config=str(tmp_path / "config.yaml"))
+    before = queue_file.read_text(encoding="utf-8")
+
+    with patch.object(send, "send_email", side_effect=AssertionError("a dry run must not send")):
+        result = send.send_queued_digest(
+            default_config=str(tmp_path / "config.yaml"), queue_file=queue_file, dry_run=True
+        )
+
+    assert result["queued"] == 2 and result["sent_digests"] == 0 and result["requeued"] == 0
+    assert '"count": 2' in capsys.readouterr().out
+    assert queue_file.read_text(encoding="utf-8") == before, "the dry run must not drain the queue"
+    assert len(queue.load_entries(queue_file=queue_file)) == 2
+
+
+def test_a_dry_run_respects_the_limit_without_removing_anything(tmp_path):
+    queue, send = _digest_modules("dry_limit")
+    queue_file = tmp_path / "digest.jsonl"
+    _enqueue(queue, queue_file, config=str(tmp_path / "c.yaml"), n=3)
+    result = send.send_queued_digest(
+        default_config=str(tmp_path / "c.yaml"), queue_file=queue_file, dry_run=True, limit=1
+    )
+    assert result["queued"] == 1
+    assert len(queue.load_entries(queue_file=queue_file)) == 3
+
+
+def test_entries_keep_their_own_config_unless_the_container_setting_is_on(tmp_path, monkeypatch):
+    queue, send = _digest_modules("entry_cfg")
+    queue_file = tmp_path / "digest.jsonl"
+    _enqueue(queue, queue_file, config="/host/only/config.local.yaml", n=1)
+    default = str(tmp_path / "pod-config.yaml")
+    seen = []
+
+    def fake_load_config(path):
+        seen.append(path)
+        return {"config": path}
+
+    monkeypatch.delenv("SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG", raising=False)
+    with (
+        patch.object(send, "load_config", fake_load_config),
+        patch.object(send, "send_email", lambda *a, **k: {"message_id": "<x>"}),
+    ):
+        send.send_queued_digest(default_config=default, queue_file=queue_file)
+    assert seen == ["/host/only/config.local.yaml"], "the default behaviour is unchanged"
+
+    _enqueue(queue, queue_file, config="/host/only/config.local.yaml", n=1)
+    monkeypatch.setenv("SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG", "1")
+    seen.clear()
+    with (
+        patch.object(send, "load_config", fake_load_config),
+        patch.object(send, "send_email", lambda *a, **k: {"message_id": "<x>"}),
+    ):
+        result = send.send_queued_digest(default_config=default, queue_file=queue_file)
+    assert seen == [default]
+    assert result["sent_digests"] == 1 and result["errors"] == []
+
+
+def test_the_ignore_setting_accepts_only_clear_yes_values(monkeypatch):
+    _, send = _digest_modules("flag_values")
+    for value in ("1", "true", "TRUE", " yes ", "on"):
+        monkeypatch.setenv("SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG", value)
+        assert send._entry_config({"config": "/host/x"}, "/pod/y") == "/pod/y", value
+    for value in ("", "0", "false", "no", "off", "maybe"):
+        monkeypatch.setenv("SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG", value)
+        assert send._entry_config({"config": "/host/x"}, "/pod/y") == "/host/x", value

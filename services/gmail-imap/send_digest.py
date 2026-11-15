@@ -22,7 +22,7 @@ if str(SCRIPT_DIR) in sys.path:
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from common import ConfigError, MailError, default_config_path, load_config, send_email
-from digest_queue import append_entries, default_queue_file, pop_entries
+from digest_queue import append_entries, default_queue_file, load_entries, pop_entries
 
 _DIGEST_HEADERS = {
     "X-Portfolio-Service": "shock-relay",
@@ -31,7 +31,21 @@ _DIGEST_HEADERS = {
 }
 
 
+IGNORE_ENTRY_CONFIG_ENV = "SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG"
+
+
+def _ignore_entry_config() -> bool:
+    return os.environ.get(IGNORE_ENTRY_CONFIG_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _entry_config(entry: dict[str, Any], default_config: str) -> str:
+    """The config an entry is sent with: its own, else the default.
+
+    Each queued entry records the absolute path of the config that produced it. A container cannot read that
+    host path, so ``SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG=1`` sends every entry with the default config.
+    """
+    if _ignore_entry_config():
+        return default_config.strip()
     return str(entry.get("config") or default_config).strip()
 
 
@@ -116,7 +130,14 @@ def send_queued_digest(
     dry_run: bool = False,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    entries = pop_entries(queue_file=queue_file, limit=limit)
+    # A dry run only reports: it must leave the queue exactly as it found it. (It used to pop the entries and
+    # never put them back, so a "dry run" deleted the queued notifications.)
+    if dry_run:
+        entries = load_entries(queue_file=queue_file)
+        if limit is not None and limit > 0:
+            entries = entries[:limit]
+    else:
+        entries = pop_entries(queue_file=queue_file, limit=limit)
     result: dict[str, Any] = {
         "queued": len(entries),
         "sent_digests": 0,
