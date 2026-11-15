@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# deploy.sh — run the shock-relay Gmail digest sender the way you choose: dev, host or k3s.
+#
+#   deploy/deploy.sh [--mode dev|host|k3s] up|down|status|verify|mode
+#
+# The mode comes from, first match wins:
+#   1. --mode on the command line
+#   2. SHOCK_RELAY_DEPLOY_MODE in the environment
+#   3. SHOCK_RELAY_DEPLOY_MODE in config/deploy.local.env (copy config/deploy.example.env; never committed)
+#   4. dev
+#
+# This covers the hourly digest sender (services/gmail-imap/send_digest.py). Only k3s mode touches kubectl,
+# podman or a cluster. See docs/deployment.md for what each mode needs, does, and how to switch.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$HERE/.." && pwd)"
+K3S_DIR="${SHOCK_RELAY_K3S_DIR:-$HERE/k3s}"
+CONFIG_FILE="${SHOCK_RELAY_DEPLOY_CONFIG:-$REPO/config/deploy.local.env}"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/shock-relay"
+MARKER="$STATE_DIR/deploy-mode"
+TIMER="shock-relay-gmail-digest.timer"
+MODES="dev host k3s"
+
+usage() {
+  sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  exit "${1:-2}"
+}
+
+mode="" source_of=""
+cmd=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --mode) mode="${2:?--mode needs dev, host or k3s}"; source_of="--mode"; shift 2 ;;
+    --mode=*) mode="${1#--mode=}"; source_of="--mode"; shift ;;
+    -h|--help) usage 0 ;;
+    up|down|status|verify|mode) cmd="$1"; shift ;;
+    *) echo "unknown argument: $1" >&2; usage 2 ;;
+  esac
+done
+[ -n "$cmd" ] || usage 2
+
+if [ -z "$mode" ] && [ -n "${SHOCK_RELAY_DEPLOY_MODE:-}" ]; then mode="$SHOCK_RELAY_DEPLOY_MODE"; source_of="environment"; fi
+if [ -z "$mode" ] && [ -f "$CONFIG_FILE" ]; then
+  # No `|| true`: if reading the config fails, say so rather than quietly choosing dev.
+  line="$(python3 -I "$K3S_DIR/env_value.py" "$CONFIG_FILE" SHOCK_RELAY_DEPLOY_MODE)"
+  if [ -n "$line" ]; then mode="${line#SHOCK_RELAY_DEPLOY_MODE=}"; source_of="$CONFIG_FILE"; fi
+fi
+if [ -z "$mode" ]; then mode="dev"; source_of="default"; fi
+case " $MODES " in *" $mode "*) ;; *) echo "unknown deployment mode '$mode' (from $source_of); use one of: $MODES" >&2; exit 2 ;; esac
+
+need() { command -v "$1" >/dev/null 2>&1 || { echo "$2" >&2; exit 1; }; }
+marker_is_k3s() { [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = k3s ]; }
+set_marker() { mkdir -p "$STATE_DIR"; echo "$1" > "$MARKER"; }
+clear_marker() { rm -f "$MARKER"; }
+timer_installed() { systemctl --user cat "$TIMER" >/dev/null 2>&1; }
+show_timer() {
+  printf '%-34s %-9s %s\n' "$TIMER" "$(systemctl --user is-active "$TIMER" 2>/dev/null || true)" \
+    "$(systemctl --user is-enabled "$TIMER" 2>/dev/null || true)"
+}
+
+case "$cmd:$mode" in
+  mode:*) echo "$mode (from $source_of)" ;;
+
+  # ---- dev: one drain of the queue in the foreground, no systemd, no cluster ----
+  up:dev) exec python3 "$REPO/services/gmail-imap/send_digest.py" ;;
+  down:dev) echo "dev mode sends one digest and exits; there is nothing to stop" ;;
+  status:dev|verify:dev) python3 "$REPO/services/gmail-imap/send_digest.py" --dry-run --json ;;
+
+  # ---- host: the Clockwork-managed systemd user timer, hourly ----
+  up:host)
+    if marker_is_k3s; then
+      echo "the K3s sender is active; suspending it before the host timer starts"
+      if command -v "${KUBECTL:-kubectl}" >/dev/null 2>&1; then "$K3S_DIR/handover.sh" pod-off
+      else echo "kubectl is not installed: suspend the CronJob yourself (docs/deployment.md) or both will send" >&2; exit 1; fi
+    fi
+    timer_installed || {
+      echo "$TIMER is not installed. Install it with Clockwork from its examples/shock-relay/gmail-digest.toml (see docs/deployment.md)" >&2
+      exit 1
+    }
+    systemctl --user enable --now "$TIMER"
+    clear_marker
+    ;;
+  down:host) systemctl --user disable --now "$TIMER"; clear_marker ;;
+  status:host) show_timer ;;
+  verify:host) systemctl --user is-active --quiet "$TIMER" && echo "$TIMER is active" ;;
+
+  # ---- k3s: a CronJob, with default-deny egress and the queue kept on the host ----
+  up:k3s)
+    need "${KUBECTL:-kubectl}" "k3s mode needs kubectl and a running K3s (see docs/deployment.md). dev and host modes need neither."
+    need podman "k3s mode needs podman, to build the image"
+    export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/k3s.yaml}"
+    curl -fsS --max-time 5 http://10.43.0.50:5000/v2/ >/dev/null 2>&1 || {
+      echo "k3s mode needs the in-cluster registry: run install-registry.sh and enable-registry-mirror.sh from crew-chief's deploy/k3s" >&2
+      exit 1
+    }
+    "$K3S_DIR/prepare-host.sh"
+    "$K3S_DIR/build-image.sh"
+    "$K3S_DIR/apply.sh"
+    "$K3S_DIR/verify.sh"
+    # Hand over only after verify passed: the timer keeps sending until the pod is proven.
+    systemctl --user disable --now "$TIMER" 2>/dev/null || true
+    "$K3S_DIR/handover.sh" pod-on
+    set_marker k3s
+    ;;
+  down:k3s) "$0" --mode host up; echo "rolled back to the host timer; the CronJob is suspended and left in place (kubectl delete ns shock-relay removes it)" ;;
+  status:k3s)
+    show_timer
+    KUBECONFIG="${KUBECONFIG:-$HOME/.kube/k3s.yaml}" "${KUBECTL:-kubectl}" -n shock-relay get cronjob,pods 2>&1 || true ;;
+  verify:k3s) "$K3S_DIR/verify.sh" ;;
+esac

@@ -1,0 +1,11 @@
+# The digest sender as a container: stdlib only, runs as the owner's uid so the host-mounted queue folder stays
+# owned by them. Credentials come from environment variables (a Secret), never from the image or a file.
+FROM docker.io/library/python:3.12-slim
+WORKDIR /app
+COPY services/gmail-imap /app/services/gmail-imap
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    SHOCK_RELAY_GMAIL_DIGEST_FILE=/queue/gmail-digest.jsonl \
+    SHOCK_RELAY_DIGEST_IGNORE_ENTRY_CONFIG=1
+USER 1000:1000
+ENTRYPOINT ["python3", "/app/services/gmail-imap/send_digest.py"]
+CMD ["--config", "/etc/shock-relay/config.yaml"]

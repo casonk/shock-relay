@@ -1,0 +1,60 @@
+# Send the queued notification digest every hour, as the host timer did (OnUnitActiveSec=1h).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: shock-relay-digest
+  namespace: shock-relay
+spec:
+  schedule: "0 * * * *"
+  suspend: true                      # created suspended; deploy.sh unsuspends it after verify and the timer is off
+  concurrencyPolicy: Forbid          # a slow send is never overlapped by the next
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels: {app: shock-relay-digest}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000     # the owner's uid: the queue folder is theirs
+            runAsGroup: 1000
+            # No fsGroup: on a local volume it would recursively change the group of the real files.
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: digest
+              image: localhost:5000/shock-relay-digest:k3s
+              imagePullPolicy: Always
+              env:
+                # Digest times and subjects are local; a pod defaults to UTC (rendered by apply.sh).
+                - {name: TZ, value: "__TZ__"}
+              envFrom:
+                - secretRef: {name: shock-relay-env}   # the Gmail credentials, resolved from the vault at deploy time
+              resources:
+                requests: {cpu: 20m, memory: 64Mi}
+                limits: {memory: 256Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: queue, mountPath: /queue}
+                - {name: config, mountPath: /etc/shock-relay, readOnly: true}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: queue
+              persistentVolumeClaim: {claimName: queue}
+            - name: config
+              # Holds no credential (those are environment variables), only hosts and recipients. 0444 because a
+              # Secret file is root-owned and the pod is not root; fsGroup would re-group the host queue folder.
+              secret: {secretName: shock-relay-config, defaultMode: 0444}
+            - name: tmp
+              emptyDir: {sizeLimit: 16Mi}
