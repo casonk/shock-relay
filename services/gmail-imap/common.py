@@ -11,6 +11,7 @@ import time
 from collections.abc import Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC
 from email import message_from_bytes
 from email.header import decode_header, make_header
 from email.message import EmailMessage
@@ -1185,9 +1186,9 @@ def build_search_terms(
     if subject_contains:
         terms.extend(["SUBJECT", f'"{subject_contains}"'])
     if since_days is not None and since_days >= 0:
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
-        since_date = datetime.now(timezone.utc) - timedelta(days=since_days)
+        since_date = datetime.now(UTC) - timedelta(days=since_days)
         terms.extend(["SINCE", since_date.strftime("%d-%b-%Y")])
     if not terms:
         return ["ALL"]
